@@ -1,0 +1,90 @@
+{
+  "project_info": {
+    "project_number": "913437887294",
+    "project_id": "voicetales-a9418",
+    "storage_bucket": "voicetales-a9418.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:913437887294:android:a1ab3b72676b6b3b0dfa6f",
+        "android_client_info": {
+          "package_name": "com.example.feelog_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "913437887294-n7867hr9d8aomfeu54r00veso3l3dl72.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-Gjcq51Em8fESTlLOeR0q-4ghea08i08"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "913437887294-h17st1fvdflp2i1ena8dr568bdfju9q2.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "913437887294-s3psulfdtr1j8f9l85qibqhj6368nc6r.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.voicetales"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:913437887294:android:f29a878f49ed3fab0dfa6f",
+        "android_client_info": {
+          "package_name": "com.example.voicetales"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "913437887294-d214nrrk5l6536q2okb2joqauo3ut5rq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.voicetales",
+            "certificate_hash": "a43a4106a65c67ad60d088b431a7cf9ebf6350e9"
+          }
+        },
+        {
+          "client_id": "913437887294-n7867hr9d8aomfeu54r00veso3l3dl72.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-Gjcq51Em8fESTlLOeR0q-4ghea08i08"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "913437887294-h17st1fvdflp2i1ena8dr568bdfju9q2.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "913437887294-s3psulfdtr1j8f9l85qibqhj6368nc6r.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.voicetales"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
