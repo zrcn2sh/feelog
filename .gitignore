@@ -5,9 +5,11 @@
 *.swp
 .DS_Store
 .atom/
+.build/
 .buildlog/
 .history
 .svn/
+.swiftpm/
 migrate_working_dir/
 
 # IntelliJ related
@@ -47,4 +49,19 @@ lib/config/app_secret.dart
 
 # feelog subdirectory (has its own git repo)
 feelog/
+
+# Firebase and Google Services
+**/GoogleService-Info.plist
+**/google-services.json
+ios/Runner/GoogleService-Info.plist
+android/app/google-services.json
+
+# iOS Pods
+ios/Pods/
+ios/Podfile.lock
+macos/Pods/
+macos/Podfile.lock
+
+# App secrets
+lib/config/app_secret.dart
 
