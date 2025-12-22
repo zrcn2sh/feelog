@@ -109,11 +109,23 @@ class DiaryEntry extends HiveObject {
 
   // Hive Map에서 DiaryEntry 생성
   factory DiaryEntry.fromHiveMap(Map<String, dynamic> map) {
+    // 중첩된 Map도 안전하게 변환
+    Map<String, dynamic>? moodAnalysisData;
+    if (map['moodAnalysisData'] != null) {
+      // _Map<dynamic, dynamic> 타입도 처리 가능하도록 변환
+      final rawData = map['moodAnalysisData'];
+      if (rawData is Map) {
+        moodAnalysisData = rawData.cast<String, dynamic>();
+      } else if (rawData is Map<String, dynamic>) {
+        moodAnalysisData = rawData;
+      }
+    }
+    
     return DiaryEntry(
       date: DateTime.parse(map['date'] as String),
       content: map['content'] as String,
-      moodAnalysis: map['moodAnalysisData'] != null
-          ? MoodAnalysisResult.fromJson(map['moodAnalysisData'] as Map<String, dynamic>)
+      moodAnalysis: moodAnalysisData != null
+          ? MoodAnalysisResult.fromJson(moodAnalysisData)
           : null,
       createdAt: DateTime.parse(map['createdAt'] as String),
       updatedAt: DateTime.parse(map['updatedAt'] as String),

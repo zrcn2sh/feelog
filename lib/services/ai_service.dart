@@ -28,22 +28,41 @@ class AIService {
 
   /// API 키 설정 및 모델 초기화
   static void setApiKey(String apiKey) {
-    _apiKey = apiKey;
+    // API 키에서 공백 및 줄바꿈 제거
+    final trimmedKey = apiKey.trim();
+
+    // API 키 유효성 검사
+    if (trimmedKey.isEmpty) {
+      print('⚠️ API 키가 비어있습니다.');
+      _apiKey = null; // 명시적으로 null 설정
+      _initialized = false;
+      return;
+    }
+
+    if (!trimmedKey.startsWith('AIza')) {
+      print(
+          '⚠️ API 키 형식이 올바르지 않습니다. (시작: ${trimmedKey.substring(0, trimmedKey.length > 10 ? 10 : trimmedKey.length)})');
+      // 경고만 하고 계속 진행 (일부 유효한 키도 있을 수 있음)
+    }
+
+    _apiKey = trimmedKey;
     _initialized = false; // API 키 변경 시 재초기화 필요
+    print('✅ API 키 설정 완료 (길이: ${_apiKey!.length})');
   }
 
-  /// 모델 초기화 (voicetales 방식과 동일)
+  /// 모델 초기화
   static Future<void> _ensureInitialized() async {
     if (_initialized && _model != null) return;
     if (_apiKey == null || _apiKey!.isEmpty) {
       throw Exception('API 키가 설정되지 않았습니다.');
     }
 
-    // 지원되는 모델 목록 (우선순위 순) - voicetales와 동일
+    // 지원되는 모델 목록 (우선순위 순)
+    // Google Generative AI SDK에서 사용 가능한 모델들
     List<String> supportedModels = [
-      'gemini-2.5-flash-lite', // 기본 모델 - 빠르고 효율적
-      'gemini-2.5-flash', // 대체 모델 - 더 높은 성능
-      'gemini-pro', // 백업 모델 - 안정성
+      'gemini-2.0-flash', // 최신 빠른 모델 (권장)
+      'gemini-pro', // 안정적인 모델 (백업)
+      'gemini-1.5-pro', // 고성능 모델 (백업)
     ];
 
     for (String modelName in supportedModels) {
@@ -53,7 +72,9 @@ class AIService {
         // GenerationConfig 설정
         final config = GenerationConfig(
           temperature: 0.7,
-          topK: modelName.contains('2.5') ? 64 : 40,
+          topK: (modelName.contains('1.5') || modelName.contains('2.0'))
+              ? 64
+              : 40,
           topP: 0.95,
           maxOutputTokens: 8192,
         );
@@ -64,14 +85,14 @@ class AIService {
           generationConfig: config,
         );
 
-        // 모델 테스트를 위한 간단한 요청
-        await _model!.generateContent([Content.text('test')]);
-
+        // 모델 초기화만 수행 (테스트 요청 제거 - 실제 사용 시점에 검증)
         _initialized = true;
         print('✅ AI Service 초기화 완료 (모델: $modelName)');
         return;
       } catch (e) {
         print('⚠️ 모델 $modelName 초기화 실패: $e');
+        _initialized = false;
+        _model = null;
         continue;
       }
     }
@@ -109,6 +130,7 @@ class AIService {
   Future<MoodAnalysisResult?> analyzeDiary(String diaryContent) async {
     try {
       await _ensureInitialized();
+
       if (_model == null) {
         print('⚠️ API 키가 설정되지 않았습니다. setApiKey()를 먼저 호출하세요.');
         return _getDefaultAnalysis();
@@ -117,39 +139,61 @@ class AIService {
       final prompt = _buildPrompt(diaryContent);
       print('🔵 Gemini API 호출 시작...');
 
-      final response = await _model!.generateContent([Content.text(prompt)]);
-
-      if (response.text == null || response.text!.isEmpty) {
-        print('⚠️ 응답이 비어있습니다');
-        return _getDefaultAnalysis();
-      }
-
-      final generatedText = response.text!;
-      print(
-          '✅ AI 응답 받음: ${generatedText.substring(0, generatedText.length > 100 ? 100 : generatedText.length)}...');
-
-      // JSON 파싱 시도
+      // API 호출 시도 (실패 시 다른 모델로 재시도)
       try {
-        final jsonMatch =
-            RegExp(r'\{.*\}', dotAll: true).firstMatch(generatedText);
-        if (jsonMatch != null) {
-          final jsonStr = jsonMatch.group(0)!;
-          final resultJson = jsonDecode(jsonStr) as Map<String, dynamic>;
-          print('✅ JSON 파싱 성공');
-          return MoodAnalysisResult.fromJson(resultJson);
-        }
+        final response = await _model!.generateContent([Content.text(prompt)]);
+        return _processResponse(response);
       } catch (e) {
-        print('⚠️ JSON 파싱 실패: $e');
-      }
+        print('⚠️ API 호출 실패, 다른 모델로 재시도: $e');
+        // 모델 초기화 상태 리셋
+        _initialized = false;
+        _model = null;
 
-      // 파싱 실패 시 텍스트 분석 반환
-      print('📝 텍스트 기반 분석으로 전환');
-      return _parseTextResponse(generatedText);
+        // 다른 모델로 재시도
+        await _ensureInitialized();
+        if (_model == null) {
+          print('⚠️ 모든 모델 초기화 실패');
+          return _getDefaultAnalysis();
+        }
+
+        final response = await _model!.generateContent([Content.text(prompt)]);
+        return _processResponse(response);
+      }
     } catch (e, stackTrace) {
       print('❌ AI 분석 중 오류 발생: $e');
       print('스택 트레이스: $stackTrace');
       return _getDefaultAnalysis();
     }
+  }
+
+  /// API 응답 처리
+  MoodAnalysisResult _processResponse(GenerateContentResponse response) {
+    if (response.text == null || response.text!.isEmpty) {
+      print('⚠️ 응답이 비어있습니다');
+      return _getDefaultAnalysis();
+    }
+
+    final generatedText = response.text!;
+    print(
+        '✅ AI 응답 받음: ${generatedText.substring(0, generatedText.length > 100 ? 100 : generatedText.length)}...');
+
+    // JSON 파싱 시도
+    try {
+      final jsonMatch =
+          RegExp(r'\{.*\}', dotAll: true).firstMatch(generatedText);
+      if (jsonMatch != null) {
+        final jsonStr = jsonMatch.group(0)!;
+        final resultJson = jsonDecode(jsonStr) as Map<String, dynamic>;
+        print('✅ JSON 파싱 성공');
+        return MoodAnalysisResult.fromJson(resultJson);
+      }
+    } catch (e) {
+      print('⚠️ JSON 파싱 실패: $e');
+    }
+
+    // 파싱 실패 시 텍스트 분석 반환
+    print('📝 텍스트 기반 분석으로 전환');
+    return _parseTextResponse(generatedText);
   }
 
   /// 기간별 감정 변화 분석 프롬프트 작성

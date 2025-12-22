@@ -74,6 +74,12 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
+    // 이미 같은 사용자로 초기화되어 있으면 스킵
+    if (LocalDiaryService.isInitializedForUser(user.uid)) {
+      print('✅ Hive 이미 초기화됨 - 재초기화 불필요 (사용자: ${user.uid})');
+      return;
+    }
+
     try {
       print('🔧 사용자별 Hive 초기화 시작 (사용자: ${user.uid})');
       await LocalDiaryService.initialize(userId: user.uid);
@@ -127,8 +133,19 @@ class _HomePageState extends State<HomePage> {
         // 모바일: Hive 사용
         print('📱 Hive에서 일기 날짜 목록 로드 중...');
 
-        // Hive 초기화 확인을 위해 잠시 대기
-        await Future.delayed(const Duration(milliseconds: 100));
+        // Hive 초기화가 완료될 때까지 대기 (최대 3초)
+        // 이미 초기화되어 있으면 재초기화하지 않음
+        if (!LocalDiaryService.isInitialized()) {
+          print('⚠️ Hive 초기화되지 않음, 초기화 시도...');
+          try {
+            await _initializeHiveForUser();
+          } catch (e) {
+            print('⚠️ Hive 초기화 실패: $e');
+            print('⚠️ Hive 초기화 실패했지만 계속 진행합니다.');
+          }
+        } else {
+          print('✅ Hive 이미 초기화됨 - 재초기화 불필요');
+        }
 
         final dates = LocalDiaryService.getAllDiaryDates();
         final emotions = LocalDiaryService.getDiaryMainEmotions();
@@ -2396,9 +2413,12 @@ class _HomePageState extends State<HomePage> {
 
     // 6개월 전 날짜부터 오늘까지의 데이터 가져오기
     final today = DateTime.now();
-    final sixMonthsAgo = DateTime(today.year, today.month - 6, today.day);
+    // 안전한 날짜 계산 (년도와 월이 음수가 되는 것을 방지)
+    final sixMonthsAgo = DateTime(today.year, today.month, today.day).subtract(const Duration(days: 180));
+    // 월의 시작일로 정규화
+    final sixMonthsAgoStart = DateTime(sixMonthsAgo.year, sixMonthsAgo.month, 1);
     final periodKey =
-        '${sixMonthsAgo.year}-${sixMonthsAgo.month.toString().padLeft(2, '0')}-${today.year}-${today.month.toString().padLeft(2, '0')}';
+        '${sixMonthsAgoStart.year}-${sixMonthsAgoStart.month.toString().padLeft(2, '0')}-${today.year}-${today.month.toString().padLeft(2, '0')}';
 
     try {
       String aiAdvice = '분석할 데이터가 없습니다.';
@@ -2423,7 +2443,7 @@ class _HomePageState extends State<HomePage> {
             .doc(user.uid)
             .collection('entries')
             .where('date',
-                isGreaterThanOrEqualTo: Timestamp.fromDate(sixMonthsAgo))
+                isGreaterThanOrEqualTo: Timestamp.fromDate(sixMonthsAgoStart))
             .orderBy('date', descending: false)
             .get();
 
@@ -2452,7 +2472,7 @@ class _HomePageState extends State<HomePage> {
         }
 
         // 해당 기간의 일기 데이터 가져오기
-        entries = LocalDiaryService.getDiariesByDateRange(sixMonthsAgo, today);
+        entries = LocalDiaryService.getDiariesByDateRange(sixMonthsAgoStart, today);
       }
 
       if (analysisData != null) {
@@ -2553,7 +2573,7 @@ class _HomePageState extends State<HomePage> {
                   .doc('6M_$periodKey')
                   .set({
                 'period': '6M',
-                'startDate': Timestamp.fromDate(sixMonthsAgo),
+                'startDate': Timestamp.fromDate(sixMonthsAgoStart),
                 'endDate': Timestamp.fromDate(today),
                 'advice': aiAdvice,
                 'createdAt': FieldValue.serverTimestamp(),
@@ -2563,7 +2583,7 @@ class _HomePageState extends State<HomePage> {
               // 모바일: Hive에 저장
               await LocalDiaryService.savePeriodAnalysis('6M_$periodKey', {
                 'period': '6M',
-                'startDate': sixMonthsAgo.toIso8601String(),
+                'startDate': sixMonthsAgoStart.toIso8601String(),
                 'endDate': today.toIso8601String(),
                 'advice': aiAdvice,
                 'createdAt': DateTime.now().toIso8601String(),
@@ -2850,9 +2870,12 @@ class _HomePageState extends State<HomePage> {
 
     // 1년 전 날짜부터 오늘까지의 데이터 가져오기
     final today = DateTime.now();
-    final oneYearAgo = DateTime(today.year, today.month - 11, 1);
+    // 안전한 날짜 계산 (년도와 월이 음수가 되는 것을 방지)
+    final oneYearAgo = DateTime(today.year, today.month, 1).subtract(const Duration(days: 335));
+    // 월의 시작일로 정규화
+    final oneYearAgoStart = DateTime(oneYearAgo.year, oneYearAgo.month, 1);
     final periodKey =
-        '${oneYearAgo.year}-${oneYearAgo.month.toString().padLeft(2, '0')}-${today.year}-${today.month.toString().padLeft(2, '0')}';
+        '${oneYearAgoStart.year}-${oneYearAgoStart.month.toString().padLeft(2, '0')}-${today.year}-${today.month.toString().padLeft(2, '0')}';
 
     try {
       String aiAdvice = '분석할 데이터가 없습니다.';
@@ -2877,7 +2900,7 @@ class _HomePageState extends State<HomePage> {
             .doc(user.uid)
             .collection('entries')
             .where('date',
-                isGreaterThanOrEqualTo: Timestamp.fromDate(oneYearAgo))
+                isGreaterThanOrEqualTo: Timestamp.fromDate(oneYearAgoStart))
             .orderBy('date', descending: false)
             .get();
 
@@ -2906,7 +2929,7 @@ class _HomePageState extends State<HomePage> {
         }
 
         // 해당 기간의 일기 데이터 가져오기
-        entries = LocalDiaryService.getDiariesByDateRange(oneYearAgo, today);
+        entries = LocalDiaryService.getDiariesByDateRange(oneYearAgoStart, today);
       }
 
       if (analysisData != null) {
@@ -3007,7 +3030,7 @@ class _HomePageState extends State<HomePage> {
                   .doc('1Y_$periodKey')
                   .set({
                 'period': '1Y',
-                'startDate': Timestamp.fromDate(oneYearAgo),
+                'startDate': Timestamp.fromDate(oneYearAgoStart),
                 'endDate': Timestamp.fromDate(today),
                 'advice': aiAdvice,
                 'createdAt': FieldValue.serverTimestamp(),
@@ -3017,7 +3040,7 @@ class _HomePageState extends State<HomePage> {
               // 모바일: Hive에 저장
               await LocalDiaryService.savePeriodAnalysis('1Y_$periodKey', {
                 'period': '1Y',
-                'startDate': oneYearAgo.toIso8601String(),
+                'startDate': oneYearAgoStart.toIso8601String(),
                 'endDate': today.toIso8601String(),
                 'advice': aiAdvice,
                 'createdAt': DateTime.now().toIso8601String(),
