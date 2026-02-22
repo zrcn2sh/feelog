@@ -1500,6 +1500,17 @@ class _HomePageState extends State<HomePage> {
         _isEditingMode = false;
       });
 
+      if (AIService.lastCallUsedFallback && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'AI 감정 분석을 사용할 수 없어 기본 감정만 표시했습니다. lib/config/app_secret.dart에서 Gemini API 키를 확인해 주세요.',
+            ),
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+
       if (kIsWeb) {
         // 웹: Firestore에 일기 및 감정 분석 결과 업데이트
         final diaryData = {
@@ -1638,6 +1649,17 @@ class _HomePageState extends State<HomePage> {
         _isAnalyzing = false;
         _currentMoodAnalysis = moodAnalysis;
       });
+
+      if (AIService.lastCallUsedFallback && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'AI 감정 분석을 사용할 수 없어 기본 감정만 표시했습니다. lib/config/app_secret.dart에서 Gemini API 키를 확인해 주세요.',
+            ),
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
 
       // Firestore에 일기 및 감정 분석 결과 업데이트
       final diaryData = {

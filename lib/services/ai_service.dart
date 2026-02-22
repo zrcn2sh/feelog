@@ -26,6 +26,15 @@ class AIService {
   static bool _initialized = false;
   static String? _apiKey;
 
+  /// 마지막 호출이 API 실패로 기본값(폴백)을 반환했는지
+  static bool lastCallUsedFallback = false;
+
+  /// API 키가 실제로 설정되었는지 (플레이스홀더/빈 값 제외)
+  static bool get isApiKeyConfigured =>
+      _apiKey != null &&
+      _apiKey!.trim().isNotEmpty &&
+      !_apiKey!.contains('YOUR_GEMINI_API_KEY_HERE');
+
   /// API 키 설정 및 모델 초기화
   static void setApiKey(String apiKey) {
     // API 키에서 공백 및 줄바꿈 제거
@@ -102,10 +111,12 @@ class AIService {
 
   /// 기간별 감정 변화를 분석하여 조언 제공
   Future<String> analyzeMoodPeriod(Map<String, String> emotionMap) async {
+    lastCallUsedFallback = false;
     try {
       await _ensureInitialized();
       if (_model == null) {
-        return '감정 분석 데이터가 부족합니다.';
+        lastCallUsedFallback = true;
+        return '감정 분석 데이터가 부족합니다. (AI API 키를 확인해 주세요.)';
       }
 
       final prompt = _buildPeriodAnalysisPrompt(emotionMap);
@@ -118,21 +129,25 @@ class AIService {
         print('✅ 기간별 분석 조언 받음');
         return advice.trim();
       } else {
+        lastCallUsedFallback = true;
         return '데이터를 분석할 수 없습니다.';
       }
     } catch (e) {
       print('❌ 기간별 분석 중 오류: $e');
-      return '분석 중 문제가 발생했습니다.';
+      lastCallUsedFallback = true;
+      return '분석 중 문제가 발생했습니다. (API 키 및 네트워크를 확인해 주세요.)';
     }
   }
 
   /// 일기를 분석하여 감정 상태를 파악
   Future<MoodAnalysisResult?> analyzeDiary(String diaryContent) async {
+    lastCallUsedFallback = false;
     try {
       await _ensureInitialized();
 
       if (_model == null) {
         print('⚠️ API 키가 설정되지 않았습니다. setApiKey()를 먼저 호출하세요.');
+        lastCallUsedFallback = true;
         return _getDefaultAnalysis();
       }
 
@@ -153,6 +168,7 @@ class AIService {
         await _ensureInitialized();
         if (_model == null) {
           print('⚠️ 모든 모델 초기화 실패');
+          lastCallUsedFallback = true;
           return _getDefaultAnalysis();
         }
 
@@ -162,6 +178,7 @@ class AIService {
     } catch (e, stackTrace) {
       print('❌ AI 분석 중 오류 발생: $e');
       print('스택 트레이스: $stackTrace');
+      lastCallUsedFallback = true;
       return _getDefaultAnalysis();
     }
   }
