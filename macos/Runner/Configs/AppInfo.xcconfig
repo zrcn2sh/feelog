@@ -8,7 +8,7 @@
 PRODUCT_NAME = feelog_app
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.feelogApp
+PRODUCT_BUNDLE_IDENTIFIER = com.idosquare.feelog
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2025 com.example. All rights reserved.

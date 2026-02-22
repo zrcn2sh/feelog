@@ -1,20 +1,36 @@
+import 'dart:convert';
+import 'dart:math';
+import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io' show Platform;
 
+import '../config/app_secret.dart';
+
 class AuthService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  static final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: [
-      'email',
-      'profile',
-    ],
-  );
+  /// Android: serverClientId 필요(Firebase가 idToken 검증용). 웹: clientId 필요.
+  static GoogleSignIn _googleSignInForPlatform() {
+    if (kIsWeb) {
+      return GoogleSignIn(
+        clientId: AppSecret.googleWebClientId,
+        scopes: ['email', 'profile'],
+      );
+    }
+    if (Platform.isAndroid) {
+      return GoogleSignIn(
+        serverClientId: AppSecret.googleWebClientId,
+        scopes: ['email', 'profile'],
+      );
+    }
+    return GoogleSignIn(scopes: ['email', 'profile']);
+  }
 
   // Google 로그인 (Firebase Auth와 연동)
   Future<UserCredential?> signInWithGoogle() async {
@@ -32,19 +48,10 @@ class AuthService {
           '   플랫폼 타입: ${kIsWeb ? "웹" : (isMobile ? (Platform.isAndroid ? "안드로이드" : "iOS") : "기타")}');
       print('═══════════════════════════════════════');
 
-      // 웹용: Firebase 프로젝트(feelog-997bc)의 웹 OAuth 클라이언트 ID 사용.
-      // 다른 프로젝트 ID를 쓰면 "access_token audience is not for this project" 발생.
-      // Firebase 콘솔 → 프로젝트 설정 → 내 앱 → 웹 앱 → SDK 설정에서 확인.
-      final GoogleSignIn googleSignIn = kIsWeb
-          ? GoogleSignIn(
-              clientId:
-                  '539935166814-XXXXXXXXXX.apps.googleusercontent.com', // feelog-997bc 웹 클라이언트 ID로 교체
-              scopes: ['email', 'profile'],
-            )
-          : _googleSignIn;
+      final GoogleSignIn googleSignIn = _googleSignInForPlatform();
 
       print(
-          '✅ GoogleSignIn 인스턴스 생성 완료 (${kIsWeb ? "웹 - clientId 명시" : "모바일 - google-services.json 사용"})');
+          '✅ GoogleSignIn 인스턴스 생성 완료 (${kIsWeb ? "웹" : Platform.isAndroid ? "Android(serverClientId)" : "iOS"})');
 
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
@@ -73,17 +80,124 @@ class AuthService {
     }
   }
 
+  /// Apple 로그인용 nonce 생성 (재전송 공격 방지)
+  static String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(length, (_) => charset[random.nextInt(charset.length)])
+        .join();
+  }
+
+  static String _sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
+
+  /// Android용 Apple 로그인 웹 옵션 (Service ID는 Apple Developer에서 생성 후 Firebase Console에 등록)
+  static const String _appleServiceId = 'com.idosquare.feelog.service';
+  static Uri get _appleRedirectUri =>
+      Uri.parse('https://feelog-997bc.firebaseapp.com/__/auth/handler');
+
+  /// Apple 로그인 (Firebase Auth 연동). iOS 13+, Android(선택), 웹은 별도 설정 필요.
+  Future<UserCredential?> signInWithApple() async {
+    try {
+      final rawNonce = _generateNonce();
+      final nonce = _sha256ofString(rawNonce);
+
+      // Android에서는 webAuthenticationOptions 필수 (Service ID + Firebase redirect URI)
+      final webOptions = (!kIsWeb && Platform.isAndroid)
+          ? WebAuthenticationOptions(
+              clientId: _appleServiceId,
+              redirectUri: _appleRedirectUri,
+            )
+          : null;
+
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: nonce,
+        webAuthenticationOptions: webOptions,
+      );
+
+      final idToken = appleCredential.identityToken;
+      if (idToken == null || idToken.isEmpty) {
+        throw Exception(
+          'Apple 로그인 응답이 올바르지 않습니다. '
+          '다시 시도하거나, Apple Developer / Firebase의 Apple 로그인 설정을 확인해 주세요.',
+        );
+      }
+
+      final oauthCredential = OAuthProvider('apple.com').credential(
+        idToken: idToken,
+        rawNonce: rawNonce,
+      );
+
+      final userCredential = await _auth.signInWithCredential(oauthCredential);
+      final user = userCredential.user;
+
+      if (user != null) {
+        // Apple은 최초 1회만 fullName/email 전달. 없으면 기존 Firebase 프로필 유지
+        final name = appleCredential.givenName != null || appleCredential.familyName != null
+            ? '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'.trim()
+            : null;
+        if (name != null && name.isNotEmpty && user.displayName == null) {
+          await user.updateDisplayName(name);
+        }
+        if (appleCredential.email != null &&
+            appleCredential.email!.isNotEmpty &&
+            user.email == null) {
+          // email은 updateEmail 시 재인증 필요할 수 있어 프로필만 업데이트
+        }
+        await _updateUserProfile(user);
+        await _saveUserInfo(user);
+      }
+
+      return userCredential;
+    } on SignInWithAppleAuthorizationException catch (e) {
+      // 사용자 취소 또는 Apple 측 권한 오류
+      if (e.code == AuthorizationErrorCode.canceled) {
+        return null; // 취소는 실패가 아니므로 null 반환 (로그인 화면 유지)
+      }
+      throw Exception('Apple 로그인 실패: ${e.message}');
+    } on SignInWithAppleNotSupportedException catch (_) {
+      throw Exception('이 기기에서는 Apple 로그인을 사용할 수 없습니다.');
+    } catch (error) {
+      final msg = error.toString().toLowerCase();
+      if (!kIsWeb && Platform.isAndroid) {
+        // Apple 페이지에서 "invalid_client" → Service ID 미등록 또는 설정 오류
+        if (msg.contains('invalid_client') || msg.contains('invalid client')) {
+          throw Exception(
+            'Apple 로그인 "Invalid client" 오류입니다. '
+            'Apple Developer에서 Services IDs로 이동해, '
+            'Identifier가 com.idosquare.feelog.service 인 Service ID를 만들고 '
+            'Sign In with Apple을 켠 뒤 Return URL을 등록해 주세요. (자세한 내용은 docs/APPLE_SIGNIN_ANDROID.md 참고)',
+          );
+        }
+        // 웹 인증 옵션 누락 (코드 오류 시)
+        if (msg.contains('webauthenticationoptions') && msg.contains('must be provided')) {
+          throw Exception('Apple 로그인 설정 오류입니다. 앱을 업데이트해 주세요.');
+        }
+        // redirect / clientId / 설정 관련 오류
+        if (msg.contains('redirect') || msg.contains('clientid') || msg.contains('invalid') || msg.contains('configuration')) {
+          throw Exception(
+            'Apple 로그인 설정 오류입니다. '
+            'Apple Developer에서 Service ID(com.idosquare.feelog.service)와 '
+            'Return URL(https://feelog-997bc.firebaseapp.com/__/auth/handler)을 확인해 주세요.',
+          );
+        }
+      }
+      throw Exception('Apple 로그인 실패: $error');
+    }
+  }
+
   // 로그아웃
   Future<void> signOut() async {
     try {
-      // 웹용: feelog-997bc 웹 OAuth 클라이언트 ID (위 signInWithGoogle과 동일 값 사용)
-      final GoogleSignIn googleSignIn = kIsWeb
-          ? GoogleSignIn(
-              clientId:
-                  '539935166814-XXXXXXXXXX.apps.googleusercontent.com', // feelog-997bc 웹 클라이언트 ID로 교체
-              scopes: ['email', 'profile'],
-            )
-          : _googleSignIn;
+      final GoogleSignIn googleSignIn = _googleSignInForPlatform();
 
       await _auth.signOut();
       await googleSignIn.signOut();
@@ -172,16 +286,16 @@ class AuthService {
   }
 
   // 로그인 이력을 Firestore에 기록
-  Future<void> recordLoginHistory(User user) async {
+  Future<void> recordLoginHistory(User user, {String loginMethod = 'google'}) async {
     try {
       await _firestore.collection('loginHistory').add({
         'userId': user.uid,
         'email': user.email,
         'displayName': user.displayName,
         'loginTime': FieldValue.serverTimestamp(),
-        'loginMethod': 'google',
+        'loginMethod': loginMethod,
       });
-      print('로그인 이력이 기록되었습니다.');
+      print('로그인 이력이 기록되었습니다. ($loginMethod)');
     } catch (e) {
       print('로그인 이력 기록 오류: $e');
     }

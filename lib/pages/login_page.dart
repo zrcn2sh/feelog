@@ -23,37 +23,52 @@ class _LoginPageState extends State<LoginPage> {
     try {
       final userCredential = await _authService.signInWithGoogle();
       if (userCredential != null && userCredential.user != null) {
-        // 로그인 이력을 Firestore에 기록
-        await _authService.recordLoginHistory(userCredential.user!);
-
-        // 로그인 성공 - 메인 페이지로 이동
+        await _authService.recordLoginHistory(userCredential.user!, loginMethod: 'google');
         if (mounted) {
           Navigator.of(context).pushReplacementNamed('/home');
         }
       }
     } catch (e) {
-      if (mounted) {
-        showCupertinoDialog(
-          context: context,
-          builder: (BuildContext context) => CupertinoAlertDialog(
-            title: const Text('로그인 실패'),
-            content: Text('$e'),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('확인'),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-        );
-      }
+      if (mounted) _showLoginError('$e');
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _signInWithApple() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final userCredential = await _authService.signInWithApple();
+      if (userCredential != null && userCredential.user != null) {
+        await _authService.recordLoginHistory(userCredential.user!, loginMethod: 'apple');
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/home');
+        }
+      }
+    } catch (e) {
+      if (mounted) _showLoginError('$e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showLoginError(String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (BuildContext context) => CupertinoAlertDialog(
+        title: const Text('로그인 실패'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('확인'),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -139,7 +154,7 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 80),
 
-              // Google 로그인 버튼 (iPhone 스타일)
+              // Google 로그인 버튼
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -169,6 +184,38 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ],
                         ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Apple 로그인 버튼 (Apple 가이드라인: 검정 배경)
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: CupertinoButton(
+                  onPressed: _isLoading ? null : _signInWithApple,
+                  borderRadius: BorderRadius.circular(25),
+                  color: CupertinoColors.black,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        CupertinoIcons.device_phone_portrait,
+                        color: CupertinoColors.white,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Apple로 계속하기',
+                        style: GoogleFonts.gaegu(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: CupertinoColors.white,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 

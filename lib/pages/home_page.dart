@@ -8,6 +8,7 @@ import '../services/auth_service.dart';
 import '../services/ai_service.dart';
 import '../services/local_diary_service.dart';
 import '../models/diary_entry.dart';
+import '../widgets/onboarding_modal.dart';
 import '../main.dart';
 
 class HomePage extends StatefulWidget {
@@ -62,6 +63,27 @@ class _HomePageState extends State<HomePage> {
     // 3. 일기 데이터 로드
     await _loadDiaryDates();
     await _loadDiaryForDate(_selectedDate);
+
+    // 4. 첫 로그인 시 온보딩 모달 표시
+    if (mounted) _maybeShowOnboarding();
+  }
+
+  /// 첫 로그인인 경우에만 설명 모달 표시
+  Future<void> _maybeShowOnboarding() async {
+    final user = _authService.getCurrentUser();
+    if (user == null) return;
+    final seen = await OnboardingModal.hasSeenOnboarding(userId: user.uid);
+    if (seen || !mounted) return;
+    showCupertinoDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => OnboardingModal(
+        onComplete: () async {
+          await OnboardingModal.markOnboardingSeen(userId: user.uid);
+          if (ctx.mounted) Navigator.of(ctx).pop();
+        },
+      ),
+    );
   }
 
   /// 사용자별 Hive 초기화
