@@ -1895,11 +1895,9 @@ class _HomePageState extends State<HomePage> {
 
     // 첫 주 앞 빈칸
     // Dart의 weekday: Monday=1(월), Tuesday=2(화), ..., Sunday=7(일)
-    // 달력 인덱스: Sunday=0, Monday=1, Tuesday=2, ..., Saturday=6
-    // 변환: Monday(1) -> 1, Tuesday(2) -> 2, ..., Saturday(6) -> 6, Sunday(7) -> 0
-    // 달력은 일요일부터 시작하므로 수요일(weekday=3)은 인덱스 3에 위치
-    // 앞에 빈칸 0, 1, 2 → 총 3개 빈칸 필요
-    int calendarIndex = (firstWeekday == 7) ? 6 : firstWeekday;
+    // 달력 열: 일=0, 월=1, 화=2, 수=3, 목=4, 금=5, 토=6
+    // 1일이 일요일(7)이면 열 0, 월요일(1)이면 열 1, ..., 토요일(6)이면 열 6
+    int calendarIndex = (firstWeekday == 7) ? 0 : firstWeekday;
 
     for (int i = 0; i < calendarIndex; i++) {
       week.add(DateTime(0));

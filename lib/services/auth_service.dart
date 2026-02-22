@@ -32,12 +32,13 @@ class AuthService {
           '   플랫폼 타입: ${kIsWeb ? "웹" : (isMobile ? (Platform.isAndroid ? "안드로이드" : "iOS") : "기타")}');
       print('═══════════════════════════════════════');
 
-      // 웹용 Google Sign-In 설정 (웹에서만 clientId 명시)
-      // 모바일 앱에서는 google-services.json의 clientId를 자동으로 사용
+      // 웹용: Firebase 프로젝트(feelog-997bc)의 웹 OAuth 클라이언트 ID 사용.
+      // 다른 프로젝트 ID를 쓰면 "access_token audience is not for this project" 발생.
+      // Firebase 콘솔 → 프로젝트 설정 → 내 앱 → 웹 앱 → SDK 설정에서 확인.
       final GoogleSignIn googleSignIn = kIsWeb
           ? GoogleSignIn(
               clientId:
-                  '913437887294-n7867hr9d8aomfeu54r00veso3l3dl72.apps.googleusercontent.com',
+                  '539935166814-XXXXXXXXXX.apps.googleusercontent.com', // feelog-997bc 웹 클라이언트 ID로 교체
               scopes: ['email', 'profile'],
             )
           : _googleSignIn;
@@ -75,12 +76,11 @@ class AuthService {
   // 로그아웃
   Future<void> signOut() async {
     try {
-      // 웹용 Google Sign-In 설정 (웹에서만 clientId 명시)
-      // 모바일 앱에서는 google-services.json의 clientId를 자동으로 사용
+      // 웹용: feelog-997bc 웹 OAuth 클라이언트 ID (위 signInWithGoogle과 동일 값 사용)
       final GoogleSignIn googleSignIn = kIsWeb
           ? GoogleSignIn(
               clientId:
-                  '913437887294-n7867hr9d8aomfeu54r00veso3l3dl72.apps.googleusercontent.com',
+                  '539935166814-XXXXXXXXXX.apps.googleusercontent.com', // feelog-997bc 웹 클라이언트 ID로 교체
               scopes: ['email', 'profile'],
             )
           : _googleSignIn;

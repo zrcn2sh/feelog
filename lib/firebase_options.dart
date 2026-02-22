@@ -41,48 +41,49 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDxdlGb3ZT2E96BHHoA489kgpW-TWsht1c',
-    appId: '1:913437887294:web:29cf6ca8256582050dfa6f',
-    messagingSenderId: '913437887294',
-    projectId: 'voicetales-a9418',
-    authDomain: 'voicetales-a9418.firebaseapp.com',
-    storageBucket: 'voicetales-a9418.firebasestorage.app',
-    measurementId: 'G-95B17XL8DH',
+    apiKey: 'AIzaSyAzQnRsT65CYwgyCicxQcHIbxSQ68AdBMw',
+    appId: '1:539935166814:web:0836616ffcd59a2de1bfcf',
+    messagingSenderId: '539935166814',
+    projectId: 'feelog-997bc',
+    authDomain: 'feelog-997bc.firebaseapp.com',
+    storageBucket: 'feelog-997bc.firebasestorage.app',
+    measurementId: 'G-2325WDHYL8',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyD-Gjcq51Em8fESTlLOeR0q-4ghea08i08',
-    appId: '1:913437887294:android:f29a878f49ed3fab0dfa6f',
-    messagingSenderId: '913437887294',
-    projectId: 'voicetales-a9418',
-    storageBucket: 'voicetales-a9418.firebasestorage.app',
+    apiKey: 'AIzaSyCdML5A2Gvi8u-nQUosE13wAuILDwL6oe0',
+    appId: '1:539935166814:android:5f2c1630137bc12fe1bfcf',
+    messagingSenderId: '539935166814',
+    projectId: 'feelog-997bc',
+    storageBucket: 'feelog-997bc.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyD_MRbvYJESDUQfbadfGQ1zTU7mdr3N4AE',
-    appId: '1:913437887294:ios:3f8821f04506e5da0dfa6f',
-    messagingSenderId: '913437887294',
-    projectId: 'voicetales-a9418',
-    storageBucket: 'voicetales-a9418.firebasestorage.app',
+    apiKey: 'AIzaSyCt3hqu-REuMq3hujFAKWI4I59RjdBU-6Q',
+    appId: '1:539935166814:ios:597f497c02131b18e1bfcf',
+    messagingSenderId: '539935166814',
+    projectId: 'feelog-997bc',
+    storageBucket: 'feelog-997bc.firebasestorage.app',
     iosBundleId: 'com.example.voicetales',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyD_MRbvYJESDUQfbadfGQ1zTU7mdr3N4AE',
-    appId: '1:913437887294:ios:3f8821f04506e5da0dfa6f',
-    messagingSenderId: '913437887294',
-    projectId: 'voicetales-a9418',
-    storageBucket: 'voicetales-a9418.firebasestorage.app',
-    iosBundleId: 'com.example.voicetales',
+    apiKey: 'AIzaSyCt3hqu-REuMq3hujFAKWI4I59RjdBU-6Q',
+    appId: '1:539935166814:ios:550b24e5f07d8eeae1bfcf',
+    messagingSenderId: '539935166814',
+    projectId: 'feelog-997bc',
+    storageBucket: 'feelog-997bc.firebasestorage.app',
+    iosBundleId: 'com.example.feelogApp',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyDxdlGb3ZT2E96BHHoA489kgpW-TWsht1c',
-    appId: '1:913437887294:web:3ffabc712bc8d3270dfa6f',
-    messagingSenderId: '913437887294',
-    projectId: 'voicetales-a9418',
-    authDomain: 'voicetales-a9418.firebaseapp.com',
-    storageBucket: 'voicetales-a9418.firebasestorage.app',
-    measurementId: 'G-65SDF9R3MZ',
+    apiKey: 'AIzaSyAzQnRsT65CYwgyCicxQcHIbxSQ68AdBMw',
+    appId: '1:539935166814:web:3b4af2c3b7df53aae1bfcf',
+    messagingSenderId: '539935166814',
+    projectId: 'feelog-997bc',
+    authDomain: 'feelog-997bc.firebaseapp.com',
+    storageBucket: 'feelog-997bc.firebasestorage.app',
+    measurementId: 'G-H21MQTCLBN',
   );
+
 }

@@ -38,6 +38,16 @@ android {
     compileSdk = 34
     ndkVersion = flutter.ndkVersion
 
+    // 프로젝트 전용 디버그 키 (SHA-1 중복 방지)
+    signingConfigs {
+        debug {
+            storeFile file("feelog_debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
