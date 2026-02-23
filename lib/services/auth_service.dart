@@ -10,6 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:io' show Platform;
 
 import '../config/app_secret.dart';
+import 'local_diary_service.dart';
 
 class AuthService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -131,9 +132,11 @@ class AuthService {
         );
       }
 
+      // Firebase가 Apple 토큰 검증 시 idToken + rawNonce + authorizationCode(accessToken) 사용
       final oauthCredential = OAuthProvider('apple.com').credential(
-        idToken: idToken,
-        rawNonce: rawNonce,
+        idToken: idToken.trim(),
+        rawNonce: rawNonce.trim(),
+        accessToken: appleCredential.authorizationCode?.trim() ?? '',
       );
 
       final userCredential = await _auth.signInWithCredential(oauthCredential);
@@ -159,14 +162,35 @@ class AuthService {
       return userCredential;
     } on SignInWithAppleAuthorizationException catch (e) {
       // 사용자 취소 또는 Apple 측 권한 오류
+      print('❌ Apple 로그인 AuthorizationException: code=${e.code}, message=${e.message}');
       if (e.code == AuthorizationErrorCode.canceled) {
         return null; // 취소는 실패가 아니므로 null 반환 (로그인 화면 유지)
+      }
+      // iOS에서 자주 나오는 코드: unknown(1000), failed(1001), invalidResponse(1002), notHandled(1003)
+      if (!kIsWeb && Platform.isIOS) {
+        throw Exception(
+          'Apple 로그인에 실패했어요. '
+          'Apple Developer에서 App ID(com.idosquare.feelog)에 "Sign in with Apple"이 켜져 있는지, '
+          'Xcode에서 Runner → Signing & Capabilities에 Sign in with Apple이 추가되어 있는지 확인해 주세요.',
+        );
       }
       throw Exception('Apple 로그인 실패: ${e.message}');
     } on SignInWithAppleNotSupportedException catch (_) {
       throw Exception('이 기기에서는 Apple 로그인을 사용할 수 없습니다.');
-    } catch (error) {
+    } catch (error, stackTrace) {
       final msg = error.toString().toLowerCase();
+      print('❌ Apple 로그인 오류: $error');
+      print('스택: $stackTrace');
+      if (!kIsWeb && Platform.isIOS) {
+        // iOS 전용: 설정/권한 문제 안내
+        if (msg.contains('1000') || msg.contains('1001') || msg.contains('not handled') || msg.contains('failed')) {
+          throw Exception(
+            'Apple 로그인이 처리되지 않았어요. '
+            'Apple Developer → Identifiers → App ID(com.idosquare.feelog)에서 Sign in with Apple 사용 설정, '
+            'Xcode에서 프로젝트에 동일 Capability 추가 후 프로비저닝 프로필을 다시 받아보세요.',
+          );
+        }
+      }
       if (!kIsWeb && Platform.isAndroid) {
         // Apple 페이지에서 "invalid_client" → Service ID 미등록 또는 설정 오류
         if (msg.contains('invalid_client') || msg.contains('invalid client')) {
@@ -204,6 +228,53 @@ class AuthService {
       await _clearUserInfo();
     } catch (error) {
       throw Exception('로그아웃 실패: $error');
+    }
+  }
+
+  /// 계정 탈퇴: Firestore·로컬 데이터 삭제 후 Firebase Auth 계정 삭제
+  Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('로그인된 사용자가 없습니다.');
+
+    final uid = user.uid;
+
+    try {
+      // 1. Firestore 일기 subcollection 삭제 (diaries/{uid}/entries)
+      final entriesRef = _firestore.collection('diaries').doc(uid).collection('entries');
+      var batch = _firestore.batch();
+      var count = 0;
+      final snap = await entriesRef.get();
+      for (final doc in snap.docs) {
+        batch.delete(doc.reference);
+        count++;
+        if (count >= 500) {
+          await batch.commit();
+          batch = _firestore.batch();
+          count = 0;
+        }
+      }
+      if (count > 0) await batch.commit();
+
+      // 2. Firestore 사용자 문서 삭제
+      await _firestore.collection('users').doc(uid).delete();
+
+      // 3. 모바일: Hive 사용자 데이터 삭제
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+        await LocalDiaryService.deleteUserData(uid);
+      }
+
+      // 4. Firebase Auth 계정 삭제
+      await user.delete();
+
+      // 5. 로컬 저장 정보 삭제 및 로그아웃
+      await _clearUserInfo();
+      try {
+        final googleSignIn = _googleSignInForPlatform();
+        await googleSignIn.signOut();
+      } catch (_) {}
+      await _auth.signOut();
+    } catch (e) {
+      throw Exception('계정 탈퇴에 실패했습니다. $e');
     }
   }
 

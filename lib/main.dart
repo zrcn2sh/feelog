@@ -3,7 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'dart:io' show Platform;
 import 'firebase_options.dart';
 import 'pages/login_page.dart';
@@ -15,22 +15,9 @@ import 'config/app_secret.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 플랫폼 감지 디버깅
-  print('═══════════════════════════════════════');
-  print('🔍 플랫폼 감지 정보');
-  print('   kIsWeb: $kIsWeb');
-  if (!kIsWeb) {
-    try {
-      print('   Platform.isAndroid: ${Platform.isAndroid}');
-      print('   Platform.isIOS: ${Platform.isIOS}');
-      print('   Platform.operatingSystem: ${Platform.operatingSystem}');
-    } catch (e) {
-      print('   Platform 정보 가져오기 실패: $e');
-    }
+  if (kDebugMode) {
+    print('🔍 플랫폼: ${kIsWeb ? "웹" : (Platform.isAndroid ? "안드로이드" : "iOS")}');
   }
-  print(
-      '   플랫폼 타입: ${kIsWeb ? "웹" : (Platform.isAndroid ? "안드로이드" : (Platform.isIOS ? "iOS" : "기타"))}');
-  print('═══════════════════════════════════════');
 
   // Firebase 초기화
   await Firebase.initializeApp(
@@ -40,9 +27,9 @@ void main() async {
   // AI 서비스 초기화 (Gemini API 키 설정)
   AIService.setApiKey(AppSecret.geminiApiKey);
 
-  // Hive 초기화는 사용자 로그인 후에 수행 (main.dart에서는 스킵)
-  // 사용자별 Box를 열기 위해 userId가 필요함
-  print('ℹ️ Hive 초기화는 사용자 로그인 후 HomePage에서 수행됩니다.');
+  if (kDebugMode) {
+    print('ℹ️ Hive 초기화는 사용자 로그인 후 HomePage에서 수행됩니다.');
+  }
 
   runApp(const MyApp());
 }
@@ -62,6 +49,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoApp(
+      debugShowCheckedModeBanner: false,
       title: 'Feelog',
       theme: CupertinoThemeData(
         primaryColor: AppColors.primary,

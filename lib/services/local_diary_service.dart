@@ -567,6 +567,31 @@ class LocalDiaryService {
 
     await _diaryBox?.close();
     await _analysisBox?.close();
+    _diaryBox = null;
+    _analysisBox = null;
     _initialized = false;
+    _currentUserId = null;
+  }
+
+  /// 특정 사용자의 Hive 데이터 전체 삭제 (계정 탈퇴 시 호출)
+  static Future<void> deleteUserData(String userId) async {
+    if (kIsWeb) return;
+    if (userId.isEmpty) return;
+
+    final diaryBoxName = '$_diaryBoxPrefix$userId';
+    final analysisBoxName = '$_analysisBoxPrefix$userId';
+
+    if (_currentUserId == userId) await close();
+
+    try {
+      if (await Hive.boxExists(diaryBoxName)) {
+        await Hive.deleteBoxFromDisk(diaryBoxName);
+      }
+      if (await Hive.boxExists(analysisBoxName)) {
+        await Hive.deleteBoxFromDisk(analysisBoxName);
+      }
+    } catch (e) {
+      print('⚠️ Hive 사용자 데이터 삭제 오류: $e');
+    }
   }
 }

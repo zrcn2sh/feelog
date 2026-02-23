@@ -73,6 +73,11 @@ class OnboardingModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 모달이 열릴 때 키보드가 남아 있으면 '시작하기'가 가려지므로 한 번 더 내림
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusManager.instance.primaryFocus?.unfocus();
+      FocusScope.of(context).unfocus();
+    });
     return Material(
       color: Colors.transparent,
       child: Center(
@@ -139,7 +144,7 @@ class OnboardingModal extends StatelessWidget {
                     _buildChipRow(
                       context,
                       'SD',
-                      '같은 월·일의 과거 일기(추억)를 볼 수 있어요.',
+                      '같은 일자의 과거 일기(추억)를 볼 수 있어요.',
                     ),
                     const SizedBox(height: 16),
                     Container(
@@ -162,9 +167,9 @@ class OnboardingModal extends StatelessWidget {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            '· 일기 데이터는 이 기기(휴대폰) 안에만 저장돼요.\n'
-                            '· 앱·데이터 삭제 시에 저장된 일기는 복구할 수 없어요.\n'
-                            '· 백업 기능은 추후 오픈 예정이에요.',
+                            '· 일기 데이터는 이 기기(휴대폰)에만 저장\n'
+                            '· 앱·데이터 삭제 시에 저장된 일기는 복구 불가\n'
+                            '· 백업 기능은 추후 오픈 예정',
                             style: GoogleFonts.gaegu(
                               fontSize: 13,
                               height: 1.45,

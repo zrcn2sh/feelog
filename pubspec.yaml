@@ -38,8 +38,8 @@ dependencies:
   # Google Sign-In
   google_sign_in: ^6.2.1
   
-  # Apple Sign-In (Firebase Auth 연동)
-  sign_in_with_apple: ^6.0.0
+  # Apple Sign-In (Firebase Auth 연동, 7.x: iOS Swift 6 호환)
+  sign_in_with_apple: ^7.0.0
   crypto: ^3.0.3
   
   # Firebase

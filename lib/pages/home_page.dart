@@ -3,7 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import '../services/auth_service.dart';
 import '../services/ai_service.dart';
 import '../services/local_diary_service.dart';
@@ -69,11 +69,17 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// 첫 로그인인 경우에만 설명 모달 표시
+  /// 디버그 빌드에서는 매번 표시해 문구 변경 확인 가능 (빌드 반영 테스트용)
   Future<void> _maybeShowOnboarding() async {
     final user = _authService.getCurrentUser();
     if (user == null) return;
-    final seen = await OnboardingModal.hasSeenOnboarding(userId: user.uid);
+    final seen = kDebugMode ? false : (await OnboardingModal.hasSeenOnboarding(userId: user.uid));
     if (seen || !mounted) return;
+    // 키보드가 떠 있으면 '시작하기' 버튼이 가려지므로 먼저 내림
+    FocusManager.instance.primaryFocus?.unfocus();
+    FocusScope.of(context).unfocus();
+    await Future.delayed(const Duration(milliseconds: 150));
+    if (!mounted) return;
     showCupertinoDialog(
       context: context,
       barrierDismissible: false,
@@ -465,6 +471,20 @@ class _HomePageState extends State<HomePage> {
         ),
         actions: [
           CupertinoActionSheetAction(
+            isDestructiveAction: true,
+            onPressed: () {
+              Navigator.pop(context);
+              _showWithdrawConfirm();
+            },
+            child: Text(
+              '탈퇴하기',
+              style: GoogleFonts.gaegu(
+                fontSize: 19,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          CupertinoActionSheetAction(
             child: Text(
               '닫기',
               style: GoogleFonts.gaegu(
@@ -480,6 +500,69 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
     );
+  }
+
+  /// 탈퇴 확인 후 계정 삭제
+  Future<void> _showWithdrawConfirm() async {
+    final confirmed = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => CupertinoAlertDialog(
+        title: Text(
+          '계정 탈퇴',
+          style: GoogleFonts.gaegu(
+            fontSize: 19,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          '정말 탈퇴하시겠습니까?\n모든 일기 데이터가 삭제되며 복구할 수 없습니다.',
+          style: GoogleFonts.gaegu(fontSize: 17),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              '취소',
+              style: GoogleFonts.gaegu(fontSize: 17),
+            ),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              '탈퇴',
+              style: GoogleFonts.gaegu(fontSize: 17),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await _authService.deleteAccount();
+      if (mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+      }
+    } catch (e) {
+      if (mounted) {
+        showCupertinoDialog(
+          context: context,
+          builder: (BuildContext context) => CupertinoAlertDialog(
+            title: const Text('탈퇴 실패'),
+            content: Text('$e'),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('확인'),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        );
+      }
+    }
   }
 
   // Hive 데이터 확인 및 표시
