@@ -10,6 +10,7 @@ import '../services/local_diary_service.dart';
 import '../models/diary_entry.dart';
 import '../widgets/onboarding_modal.dart';
 import '../main.dart';
+import 'settings_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -304,6 +305,28 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  /// 다크 모드: 어두운 회색 배경으로 구분, 라이트 모드: 시스템 배경
+  Color _diaryInputBackgroundColor(BuildContext context) {
+    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    if (isDark) {
+      return const Color(0xFF2C2C2E); // iOS 스타일 어두운 회색
+    }
+    return CupertinoColors.systemBackground.resolveFrom(context);
+  }
+
+  /// 다크 모드: 기본 흰색, 비활성 시 연한 회색
+  Color _diaryInputTextColor(BuildContext context) {
+    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    if (_hasExistingDiary && !_isEditingMode) {
+      return isDark
+          ? CupertinoColors.secondaryLabel.resolveFrom(context)
+          : CupertinoColors.secondaryLabel.resolveFrom(context);
+    }
+    return isDark
+        ? CupertinoColors.white
+        : CupertinoColors.label.resolveFrom(context);
+  }
+
   Future<void> _loadUserInfo() async {
     _currentUser = _authService.getCurrentUser();
     if (_currentUser != null) {
@@ -356,149 +379,180 @@ class _HomePageState extends State<HomePage> {
   void _showUserInfo() {
     showCupertinoModalPopup(
       context: context,
-      builder: (BuildContext context) => CupertinoActionSheet(
-        title: Text(
-          '사용자 정보',
-          style: GoogleFonts.gaegu(
-            fontSize: 19,
-            fontWeight: FontWeight.w600,
-          ),
+      builder: (BuildContext context) {
+        final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+        final titleColor = isDark ? CupertinoColors.white : CupertinoColors.label.resolveFrom(context);
+        final nameColor = isDark ? CupertinoColors.white : CupertinoColors.label.resolveFrom(context);
+        final emailColor = isDark ? CupertinoColors.white : CupertinoColors.secondaryLabel.resolveFrom(context);
+        return Container(
+        decoration: BoxDecoration(
+          color: CupertinoColors.systemBackground.resolveFrom(context),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
         ),
-        message: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.1),
-              ),
-              child:
-                  _userInfo['photo'] != null && _userInfo['photo']!.isNotEmpty
-                      ? ClipOval(
-                          child: Image.network(
-                            _userInfo['photo']!,
-                            width: 80,
-                            height: 80,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Icon(
-                                CupertinoIcons.person_fill,
-                                size: 40,
-                                color: AppColors.primary,
-                              );
-                            },
-                          ),
-                        )
-                      : const Icon(
-                          CupertinoIcons.person_fill,
-                          size: 40,
-                          color: AppColors.primary,
-                        ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              _userInfo['name'] ?? '사용자',
-              style: GoogleFonts.gaegu(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: CupertinoColors.label,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _userInfo['email'] ?? '',
-              style: GoogleFonts.gaegu(
-                fontSize: 17,
-                color: CupertinoColors.secondaryLabel,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        CupertinoIcons.book_fill,
-                        size: 18,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '총 ${_diaryDates.length}개의 일기',
-                        style: GoogleFonts.gaegu(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
+                Text(
+                  '사용자 정보',
+                  style: GoogleFonts.gaegu(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: titleColor,
                   ),
                 ),
-                const SizedBox(width: 12),
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: () => _showMonthlyDiaryChart(),
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Icon(
-                      CupertinoIcons.chart_bar,
-                      color: AppColors.primary,
-                      size: 20,
-                    ),
+                const SizedBox(height: 8),
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.primary.withOpacity(0.1),
                   ),
+                  child:
+                      _userInfo['photo'] != null && _userInfo['photo']!.isNotEmpty
+                          ? ClipOval(
+                              child: Image.network(
+                                _userInfo['photo']!,
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(
+                                    CupertinoIcons.person_fill,
+                                    size: 40,
+                                    color: AppColors.primary,
+                                  );
+                                },
+                              ),
+                            )
+                          : const Icon(
+                              CupertinoIcons.person_fill,
+                              size: 40,
+                              color: AppColors.primary,
+                            ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _userInfo['name'] ?? '사용자',
+                  style: GoogleFonts.gaegu(
+                    fontSize: 21,
+                    fontWeight: FontWeight.w600,
+                    color: nameColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _userInfo['email'] ?? '',
+                  style: GoogleFonts.gaegu(
+                    fontSize: 18,
+                    color: emailColor,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            CupertinoIcons.book_fill,
+                            size: 18,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '총 ${_diaryDates.length}개의 일기',
+                            style: GoogleFonts.gaegu(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showMonthlyDiaryChart();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Icon(
+                          CupertinoIcons.chart_bar,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // 나가기 | 닫기 (한 줄)
+                Row(
+                  children: [
+                    Expanded(
+                      child: CupertinoButton(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _signOut();
+                        },
+                        child: Text(
+                          '나가기',
+                          style: GoogleFonts.gaegu(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 20,
+                      color: CupertinoColors.separator.resolveFrom(context),
+                    ),
+                    Expanded(
+                      child: CupertinoButton(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          '닫기',
+                          style: GoogleFonts.gaegu(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-          ],
+          ),
         ),
-        actions: [
-          CupertinoActionSheetAction(
-            isDestructiveAction: true,
-            onPressed: () {
-              Navigator.pop(context);
-              _showWithdrawConfirm();
-            },
-            child: Text(
-              '탈퇴하기',
-              style: GoogleFonts.gaegu(
-                fontSize: 19,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          CupertinoActionSheetAction(
-            child: Text(
-              '닫기',
-              style: GoogleFonts.gaegu(
-                fontSize: 19,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
-              ),
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -510,13 +564,13 @@ class _HomePageState extends State<HomePage> {
         title: Text(
           '계정 탈퇴',
           style: GoogleFonts.gaegu(
-            fontSize: 19,
+            fontSize: 20,
             fontWeight: FontWeight.w600,
           ),
         ),
         content: Text(
           '정말 탈퇴하시겠습니까?\n모든 일기 데이터가 삭제되며 복구할 수 없습니다.',
-          style: GoogleFonts.gaegu(fontSize: 17),
+          style: GoogleFonts.gaegu(fontSize: 18),
         ),
         actions: [
           CupertinoDialogAction(
@@ -524,7 +578,7 @@ class _HomePageState extends State<HomePage> {
             onPressed: () => Navigator.pop(context, false),
             child: Text(
               '취소',
-              style: GoogleFonts.gaegu(fontSize: 17),
+              style: GoogleFonts.gaegu(fontSize: 18),
             ),
           ),
           CupertinoDialogAction(
@@ -532,7 +586,7 @@ class _HomePageState extends State<HomePage> {
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               '탈퇴',
-              style: GoogleFonts.gaegu(fontSize: 17),
+              style: GoogleFonts.gaegu(fontSize: 18),
             ),
           ),
         ],
@@ -574,14 +628,14 @@ class _HomePageState extends State<HomePage> {
           title: Text(
             '알림',
             style: GoogleFonts.gaegu(
-              fontSize: 19,
+              fontSize: 20,
               fontWeight: FontWeight.w600,
             ),
           ),
           content: Text(
             '웹에서는 Hive를 사용하지 않습니다.',
             style: GoogleFonts.gaegu(
-              fontSize: 17,
+              fontSize: 18,
             ),
           ),
           actions: [
@@ -624,7 +678,7 @@ class _HomePageState extends State<HomePage> {
         title: Text(
           'Hive 데이터 확인',
           style: GoogleFonts.gaegu(
-            fontSize: 19,
+            fontSize: 20,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -636,7 +690,7 @@ class _HomePageState extends State<HomePage> {
               Text(
                 '총 일기 수: ${dates.length}개',
                 style: GoogleFonts.gaegu(
-                  fontSize: 17,
+                  fontSize: 18,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -645,7 +699,7 @@ class _HomePageState extends State<HomePage> {
                 Text(
                   '일기 날짜 목록:',
                   style: GoogleFonts.gaegu(
-                    fontSize: 15,
+                    fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -659,7 +713,7 @@ class _HomePageState extends State<HomePage> {
                       child: Text(
                         '• $date (${entry?.content.length ?? 0}자)',
                         style: GoogleFonts.gaegu(
-                          fontSize: 14,
+                          fontSize: 15,
                           color: CupertinoColors.secondaryLabel,
                         ),
                       ),
@@ -670,7 +724,7 @@ class _HomePageState extends State<HomePage> {
                   Text(
                     '... 외 ${dates.length - 10}개',
                     style: GoogleFonts.gaegu(
-                      fontSize: 14,
+                      fontSize: 15,
                       color: CupertinoColors.secondaryLabel,
                     ),
                   ),
@@ -678,7 +732,7 @@ class _HomePageState extends State<HomePage> {
                 Text(
                   '저장된 일기가 없습니다.',
                   style: GoogleFonts.gaegu(
-                    fontSize: 15,
+                    fontSize: 16,
                     color: CupertinoColors.secondaryLabel,
                   ),
                 ),
@@ -686,7 +740,7 @@ class _HomePageState extends State<HomePage> {
               Text(
                 '※ 상세 정보는 콘솔 로그를 확인하세요.',
                 style: GoogleFonts.gaegu(
-                  fontSize: 12,
+                  fontSize: 13,
                   color: CupertinoColors.placeholderText,
                 ),
               ),
@@ -805,98 +859,104 @@ class _HomePageState extends State<HomePage> {
 
     showCupertinoModalPopup(
       context: context,
-      builder: (BuildContext context) => CupertinoPageScaffold(
-        navigationBar: CupertinoNavigationBar(
-          middle: Text(
-            '${DateTime.now().year}년 월별 일기 작성 수',
-            style: GoogleFonts.gaegu(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
+      builder: (BuildContext popupContext) {
+        final isDark = CupertinoTheme.brightnessOf(popupContext) == Brightness.dark;
+        final chartBgColor = isDark ? const Color(0xFF2C2C2E) : CupertinoColors.systemGrey6.resolveFrom(popupContext);
+        final monthLabelColor = isDark ? CupertinoColors.white : CupertinoColors.secondaryLabel.resolveFrom(popupContext);
+        final navTitleColor = isDark ? CupertinoColors.white : CupertinoColors.label.resolveFrom(popupContext);
+        return CupertinoPageScaffold(
+          navigationBar: CupertinoNavigationBar(
+            middle: Text(
+              '${DateTime.now().year}년 월별 일기 작성 수',
+              style: GoogleFonts.gaegu(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: navTitleColor,
+              ),
+            ),
+            leading: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () => Navigator.pop(popupContext),
+              child: const Icon(
+                CupertinoIcons.back,
+                color: AppColors.primary,
+                size: 24,
+              ),
             ),
           ),
-          leading: CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: () => Navigator.pop(context),
-            child: const Icon(
-              CupertinoIcons.back,
-              color: AppColors.primary,
-              size: 24,
-            ),
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 그래프 영역
-                Container(
-                  height: 280,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: CupertinoColors.systemGrey6,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(12, (index) {
-                      final month = index + 1;
-                      final count = monthlyCount[month] ?? 0;
-                      // 사용 가능한 높이: 280 - 32(패딩) - 8(SizedBox) - 20(텍스트) = 220
-                      const availableHeight = 220.0;
-                      final height = maxCount > 0
-                          ? (count / maxCount) * availableHeight
-                          : 0.0;
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 그래프 영역
+                  Container(
+                    height: 280,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: chartBgColor,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: List.generate(12, (index) {
+                        final month = index + 1;
+                        final count = monthlyCount[month] ?? 0;
+                        // 사용 가능한 높이: 280 - 32(패딩) - 8(SizedBox) - 20(텍스트) = 220
+                        const availableHeight = 220.0;
+                        final height = maxCount > 0
+                            ? (count / maxCount) * availableHeight
+                            : 0.0;
 
-                      return Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              // 바 차트
-                              Container(
-                                width: double.infinity,
-                                height: height,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.primary,
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: Radius.circular(4),
-                                    topRight: Radius.circular(4),
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 2),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                // 바 차트
+                                Container(
+                                  width: double.infinity,
+                                  height: height,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.primary,
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: Radius.circular(4),
+                                      topRight: Radius.circular(4),
+                                    ),
+                                  ),
+                                  child: count > 0
+                                      ? Center(
+                                          child: Text(
+                                            count.toString(),
+                                            style: GoogleFonts.gaegu(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: CupertinoColors.white,
+                                            ),
+                                          ),
+                                        )
+                                      : null,
+                                ),
+                                const SizedBox(height: 8),
+                                // 월 레이블
+                                Text(
+                                  '$month월',
+                                  style: GoogleFonts.gaegu(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: monthLabelColor,
                                   ),
                                 ),
-                                child: count > 0
-                                    ? Center(
-                                        child: Text(
-                                          count.toString(),
-                                          style: GoogleFonts.gaegu(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: CupertinoColors.white,
-                                          ),
-                                        ),
-                                      )
-                                    : null,
-                              ),
-                              const SizedBox(height: 8),
-                              // 월 레이블
-                              Text(
-                                '$month월',
-                                style: GoogleFonts.gaegu(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: CupertinoColors.secondaryLabel,
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    }),
+                        );
+                      }),
+                    ),
                   ),
-                ),
                 const SizedBox(height: 24),
                 // 총 일기 수 표시 또는 빈 데이터 메시지
                 totalCount > 0
@@ -918,7 +978,7 @@ class _HomePageState extends State<HomePage> {
                             Text(
                               '총 $totalCount개의 일기',
                               style: GoogleFonts.gaegu(
-                                fontSize: 18,
+                                fontSize: 19,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.primary,
                               ),
@@ -944,7 +1004,7 @@ class _HomePageState extends State<HomePage> {
                             Text(
                               '${DateTime.now().year}년에 작성한 일기가 없습니다.',
                               style: GoogleFonts.gaegu(
-                                fontSize: 16,
+                                fontSize: 17,
                                 fontWeight: FontWeight.w500,
                                 color: CupertinoColors.secondaryLabel,
                               ),
@@ -956,7 +1016,8 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ),
-      ),
+      );
+      }
     );
   }
 
@@ -967,7 +1028,7 @@ class _HomePageState extends State<HomePage> {
         middle: Text(
           'Feelog',
           style: GoogleFonts.gaegu(
-            fontSize: 20,
+            fontSize: 21,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -1010,14 +1071,25 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             const SizedBox(width: 8),
-            // 로그아웃 버튼
+            // 설정 버튼
             CupertinoButton(
               padding: EdgeInsets.zero,
-              onPressed: _signOut,
+              onPressed: () {
+                Navigator.of(context).push(
+                  CupertinoPageRoute(
+                    builder: (context) => SettingsPage(
+                      onWithdraw: () {
+                        Navigator.of(context).pop();
+                        _showWithdrawConfirm();
+                      },
+                    ),
+                  ),
+                );
+              },
               child: const Icon(
-                CupertinoIcons.square_arrow_right_fill,
+                CupertinoIcons.gear_alt,
                 color: AppColors.primary,
-                size: 20,
+                size: 26,
               ),
             ),
           ],
@@ -1050,7 +1122,7 @@ class _HomePageState extends State<HomePage> {
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          color: CupertinoColors.systemGrey6,
+                          color: CupertinoColors.systemGrey6.resolveFrom(context),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Padding(
@@ -1092,9 +1164,11 @@ class _HomePageState extends State<HomePage> {
                                 child: Text(
                                   _formatDate(_selectedDate),
                                   style: GoogleFonts.gaegu(
-                                    fontSize: 18,
+                                    fontSize: 19,
                                     fontWeight: FontWeight.w600,
-                                    color: CupertinoColors.label,
+                                    color: CupertinoTheme.brightnessOf(context) == Brightness.dark
+                                        ? CupertinoColors.white
+                                        : CupertinoColors.label,
                                   ),
                                 ),
                               ),
@@ -1141,10 +1215,10 @@ class _HomePageState extends State<HomePage> {
                           ? Container(
                               margin: const EdgeInsets.only(top: 16),
                               decoration: BoxDecoration(
-                                color: CupertinoColors.systemBackground,
+                                color: CupertinoColors.systemBackground.resolveFrom(context),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: CupertinoColors.separator,
+                                  color: CupertinoColors.separator.resolveFrom(context),
                                   width: 0.5,
                                 ),
                               ),
@@ -1162,9 +1236,11 @@ class _HomePageState extends State<HomePage> {
                         Text(
                           '오늘의 일기',
                           style: GoogleFonts.gaegu(
-                            fontSize: 24,
+                            fontSize: 25,
                             fontWeight: FontWeight.w700,
-                            color: CupertinoColors.label,
+                            color: CupertinoTheme.brightnessOf(context) == Brightness.dark
+                                ? CupertinoColors.white
+                                : CupertinoColors.label,
                           ),
                         ),
                         Row(
@@ -1182,7 +1258,7 @@ class _HomePageState extends State<HomePage> {
                                 child: Text(
                                   '6M',
                                   style: GoogleFonts.gaegu(
-                                    fontSize: 14,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                     color: CupertinoColors.white,
                                   ),
@@ -1203,7 +1279,7 @@ class _HomePageState extends State<HomePage> {
                                 child: Text(
                                   '1Y',
                                   style: GoogleFonts.gaegu(
-                                    fontSize: 14,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                     color: CupertinoColors.white,
                                   ),
@@ -1224,7 +1300,7 @@ class _HomePageState extends State<HomePage> {
                                 child: Text(
                                   'SD',
                                   style: GoogleFonts.gaegu(
-                                    fontSize: 14,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                     color: CupertinoColors.white,
                                   ),
@@ -1251,10 +1327,10 @@ class _HomePageState extends State<HomePage> {
                           minHeight: 100, // 최소 높이
                         ),
                         decoration: BoxDecoration(
-                          color: CupertinoColors.systemBackground,
+                          color: _diaryInputBackgroundColor(context),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: CupertinoColors.separator,
+                            color: CupertinoColors.separator.resolveFrom(context),
                             width: 0.5,
                           ),
                         ),
@@ -1270,12 +1346,16 @@ class _HomePageState extends State<HomePage> {
                               maxLines: null,
                               enabled: !_hasExistingDiary ||
                                   _isEditingMode, // 일기가 없거나 수정 모드면 활성화
+                              placeholder: '일기를 입력하세요',
+                              placeholderStyle: GoogleFonts.gaegu(
+                                fontSize: 19,
+                                color: CupertinoColors.tertiaryLabel,
+                              ),
+                              cursorColor: CupertinoColors.activeBlue,
                               style: GoogleFonts.gaegu(
-                                fontSize: 18,
+                                fontSize: 19,
                                 fontWeight: FontWeight.w400,
-                                color: (_hasExistingDiary && !_isEditingMode)
-                                    ? CupertinoColors.secondaryLabel
-                                    : CupertinoColors.label,
+                                color: _diaryInputTextColor(context),
                                 height: 1.5,
                               ),
                               decoration: const BoxDecoration(),
@@ -1302,11 +1382,11 @@ class _HomePageState extends State<HomePage> {
             // 하단 고정 버튼 영역
             Container(
               padding: const EdgeInsets.all(16.0),
-              decoration: const BoxDecoration(
-                color: CupertinoColors.systemBackground,
+              decoration: BoxDecoration(
+                color: _diaryInputBackgroundColor(context),
                 border: Border(
                   top: BorderSide(
-                    color: CupertinoColors.separator,
+                    color: CupertinoColors.separator.resolveFrom(context),
                     width: 0.5,
                   ),
                 ),
@@ -1327,7 +1407,7 @@ class _HomePageState extends State<HomePage> {
                               : Text(
                                   '저장하기',
                                   style: GoogleFonts.gaegu(
-                                    fontSize: 19,
+                                    fontSize: 20,
                                     fontWeight: FontWeight.w600,
                                     color: CupertinoColors.white,
                                   ),
@@ -1352,7 +1432,7 @@ class _HomePageState extends State<HomePage> {
                                   : Text(
                                       _isEditingMode ? '저장하기' : '수정하기',
                                       style: GoogleFonts.gaegu(
-                                        fontSize: 19,
+                                        fontSize: 20,
                                         fontWeight: FontWeight.w600,
                                         color: CupertinoColors.white,
                                       ),
@@ -1396,14 +1476,14 @@ class _HomePageState extends State<HomePage> {
           title: Text(
             '알림',
             style: GoogleFonts.gaegu(
-              fontSize: 19,
+              fontSize: 20,
               fontWeight: FontWeight.w600,
             ),
           ),
           content: Text(
             '일기를 입력해주세요.',
             style: GoogleFonts.gaegu(
-              fontSize: 17,
+              fontSize: 18,
             ),
           ),
           actions: [
@@ -1512,14 +1592,14 @@ class _HomePageState extends State<HomePage> {
             title: Text(
               '저장 완료',
               style: GoogleFonts.gaegu(
-                fontSize: 19,
+                fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
               '일기가 저장되었습니다.',
               style: GoogleFonts.gaegu(
-                fontSize: 17,
+                fontSize: 18,
               ),
             ),
             actions: [
@@ -1527,7 +1607,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text(
                   '확인',
                   style: GoogleFonts.gaegu(
-                    fontSize: 17,
+                    fontSize: 18,
                   ),
                 ),
                 onPressed: () => Navigator.pop(context),
@@ -1548,14 +1628,14 @@ class _HomePageState extends State<HomePage> {
             title: Text(
               '저장 실패',
               style: GoogleFonts.gaegu(
-                fontSize: 19,
+                fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
               '일기 저장 중 오류가 발생했습니다.\n$e',
               style: GoogleFonts.gaegu(
-                fontSize: 17,
+                fontSize: 18,
               ),
             ),
             actions: [
@@ -1563,7 +1643,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text(
                   '확인',
                   style: GoogleFonts.gaegu(
-                    fontSize: 17,
+                    fontSize: 18,
                   ),
                 ),
                 onPressed: () => Navigator.pop(context),
@@ -1665,14 +1745,14 @@ class _HomePageState extends State<HomePage> {
             title: Text(
               '수정 완료',
               style: GoogleFonts.gaegu(
-                fontSize: 19,
+                fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
               '일기가 수정되었습니다.',
               style: GoogleFonts.gaegu(
-                fontSize: 17,
+                fontSize: 18,
               ),
             ),
             actions: [
@@ -1680,7 +1760,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text(
                   '확인',
                   style: GoogleFonts.gaegu(
-                    fontSize: 17,
+                    fontSize: 18,
                   ),
                 ),
                 onPressed: () => Navigator.pop(context),
@@ -1705,14 +1785,14 @@ class _HomePageState extends State<HomePage> {
             title: Text(
               '수정 실패',
               style: GoogleFonts.gaegu(
-                fontSize: 19,
+                fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
               '일기 수정 중 오류가 발생했습니다.\n$e',
               style: GoogleFonts.gaegu(
-                fontSize: 17,
+                fontSize: 18,
               ),
             ),
             actions: [
@@ -1720,7 +1800,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text(
                   '확인',
                   style: GoogleFonts.gaegu(
-                    fontSize: 17,
+                    fontSize: 18,
                   ),
                 ),
                 onPressed: () => Navigator.pop(context),
@@ -1797,14 +1877,14 @@ class _HomePageState extends State<HomePage> {
             title: Text(
               '수정 완료',
               style: GoogleFonts.gaegu(
-                fontSize: 19,
+                fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
               '일기가 수정되었습니다.',
               style: GoogleFonts.gaegu(
-                fontSize: 17,
+                fontSize: 18,
               ),
             ),
             actions: [
@@ -1812,7 +1892,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text(
                   '확인',
                   style: GoogleFonts.gaegu(
-                    fontSize: 17,
+                    fontSize: 18,
                   ),
                 ),
                 onPressed: () => Navigator.pop(context),
@@ -1833,14 +1913,14 @@ class _HomePageState extends State<HomePage> {
             title: Text(
               '수정 실패',
               style: GoogleFonts.gaegu(
-                fontSize: 19,
+                fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
               '일기 수정 중 오류가 발생했습니다.\n$e',
               style: GoogleFonts.gaegu(
-                fontSize: 17,
+                fontSize: 18,
               ),
             ),
             actions: [
@@ -1848,7 +1928,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text(
                   '확인',
                   style: GoogleFonts.gaegu(
-                    fontSize: 17,
+                    fontSize: 18,
                   ),
                 ),
                 onPressed: () => Navigator.pop(context),
@@ -1871,14 +1951,14 @@ class _HomePageState extends State<HomePage> {
         title: Text(
           '일기 삭제',
           style: GoogleFonts.gaegu(
-            fontSize: 19,
+            fontSize: 20,
             fontWeight: FontWeight.w600,
           ),
         ),
         content: Text(
           '정말 이 일기를 삭제하시겠습니까?',
           style: GoogleFonts.gaegu(
-            fontSize: 17,
+            fontSize: 18,
           ),
         ),
         actions: [
@@ -1887,7 +1967,7 @@ class _HomePageState extends State<HomePage> {
             child: Text(
               '취소',
               style: GoogleFonts.gaegu(
-                fontSize: 17,
+                fontSize: 18,
                 color: CupertinoColors.destructiveRed,
               ),
             ),
@@ -1897,7 +1977,7 @@ class _HomePageState extends State<HomePage> {
             child: Text(
               '삭제',
               style: GoogleFonts.gaegu(
-                fontSize: 17,
+                fontSize: 18,
                 color: AppColors.primary,
               ),
             ),
@@ -1938,14 +2018,14 @@ class _HomePageState extends State<HomePage> {
             title: Text(
               '삭제 완료',
               style: GoogleFonts.gaegu(
-                fontSize: 19,
+                fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
               '일기가 삭제되었습니다.',
               style: GoogleFonts.gaegu(
-                fontSize: 17,
+                fontSize: 18,
               ),
             ),
             actions: [
@@ -1953,7 +2033,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text(
                   '확인',
                   style: GoogleFonts.gaegu(
-                    fontSize: 17,
+                    fontSize: 18,
                   ),
                 ),
                 onPressed: () => Navigator.pop(context),
@@ -1981,14 +2061,14 @@ class _HomePageState extends State<HomePage> {
             title: Text(
               '삭제 실패',
               style: GoogleFonts.gaegu(
-                fontSize: 19,
+                fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
               '일기 삭제 중 오류가 발생했습니다.\n$e',
               style: GoogleFonts.gaegu(
-                fontSize: 17,
+                fontSize: 18,
               ),
             ),
             actions: [
@@ -1996,7 +2076,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text(
                   '확인',
                   style: GoogleFonts.gaegu(
-                    fontSize: 17,
+                    fontSize: 18,
                   ),
                 ),
                 onPressed: () => Navigator.pop(context),
@@ -2009,6 +2089,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildCalendar() {
+    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final calendarLabelColor = isDark
+        ? CupertinoColors.white
+        : CupertinoColors.label.resolveFrom(context);
+    final calendarSecondaryColor = isDark
+        ? CupertinoColors.white.withOpacity(0.85)
+        : CupertinoColors.secondaryLabel.resolveFrom(context);
+
     final firstDay = DateTime(_displayMonth.year, _displayMonth.month, 1);
     final lastDay = DateTime(_displayMonth.year, _displayMonth.month + 1, 0);
     final firstWeekday = firstDay.weekday;
@@ -2069,7 +2157,11 @@ class _HomePageState extends State<HomePage> {
                       // 월 변경 시 일기 날짜 목록 다시 로드
                       await _loadDiaryDates();
                     },
-                    child: const Icon(CupertinoIcons.chevron_left, size: 20),
+                    child: Icon(
+                      CupertinoIcons.chevron_left,
+                      size: 20,
+                      color: calendarLabelColor,
+                    ),
                   ),
                   CupertinoButton(
                     padding: EdgeInsets.zero,
@@ -2093,7 +2185,7 @@ class _HomePageState extends State<HomePage> {
                       child: Text(
                         '오늘',
                         style: GoogleFonts.gaegu(
-                          fontSize: 12,
+                          fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: CupertinoColors.white,
                         ),
@@ -2109,9 +2201,9 @@ class _HomePageState extends State<HomePage> {
                 child: Text(
                   '${_displayMonth.year}년 ${_displayMonth.month}월',
                   style: GoogleFonts.gaegu(
-                    fontSize: 17,
+                    fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: CupertinoColors.label,
+                    color: calendarLabelColor,
                   ),
                 ),
               ),
@@ -2125,7 +2217,11 @@ class _HomePageState extends State<HomePage> {
                   // 월 변경 시 일기 날짜 목록 다시 로드
                   await _loadDiaryDates();
                 },
-                child: const Icon(CupertinoIcons.chevron_right, size: 20),
+                child: Icon(
+                  CupertinoIcons.chevron_right,
+                  size: 20,
+                  color: calendarLabelColor,
+                ),
               ),
             ],
           ),
@@ -2138,9 +2234,9 @@ class _HomePageState extends State<HomePage> {
                   day,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.gaegu(
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: CupertinoColors.secondaryLabel,
+                    color: calendarSecondaryColor,
                   ),
                 ),
               );
@@ -2205,7 +2301,7 @@ class _HomePageState extends State<HomePage> {
                                             : Colors.transparent,
                                 border: isSelected
                                     ? Border.all(
-                                        color: Colors.red,
+                                        color: AppColors.primary,
                                         width: 2.0,
                                       )
                                     : null,
@@ -2215,13 +2311,13 @@ class _HomePageState extends State<HomePage> {
                               child: Text(
                                 '${date.day}',
                                 style: GoogleFonts.gaegu(
-                                  fontSize: 13,
+                                  fontSize: 14,
                                   fontWeight: isSelected
                                       ? FontWeight.w600
                                       : FontWeight.w400,
                                   color: isPast
-                                      ? CupertinoColors.secondaryLabel
-                                      : CupertinoColors.label,
+                                      ? calendarSecondaryColor
+                                      : calendarLabelColor,
                                 ),
                                 textAlign: TextAlign.center,
                                 overflow: TextOverflow.visible,
@@ -2394,10 +2490,18 @@ class _HomePageState extends State<HomePage> {
 
   /// AI 분석 결과를 Mood Meter로 표시 (상위 3개 감정)
   Widget _buildMoodChart(MoodAnalysisResult analysis) {
+    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final chartTextColor = isDark
+        ? CupertinoColors.white
+        : CupertinoColors.label.resolveFrom(context);
+    final chartBgColor = isDark
+        ? const Color(0xFF2C2C2E)
+        : CupertinoColors.systemGrey6.resolveFrom(context);
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: CupertinoColors.systemGrey6,
+        color: chartBgColor,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -2426,9 +2530,9 @@ class _HomePageState extends State<HomePage> {
                       child: Text(
                         emotion,
                         style: GoogleFonts.gaegu(
-                          fontSize: 14,
+                          fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: CupertinoColors.label,
+                          color: chartTextColor,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -2475,9 +2579,11 @@ class _HomePageState extends State<HomePage> {
                       child: Text(
                         '${(value * 100).toStringAsFixed(0)}%',
                         style: GoogleFonts.gaegu(
-                          fontSize: 13,
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: CupertinoColors.black,
+                          color: isDark
+                              ? CupertinoColors.black
+                              : CupertinoColors.label.resolveFrom(context),
                         ),
                       ),
                     ),
@@ -2491,8 +2597,8 @@ class _HomePageState extends State<HomePage> {
           Text(
             analysis.advice,
             style: GoogleFonts.gaegu(
-              fontSize: 16,
-              color: CupertinoColors.label,
+              fontSize: 17,
+              color: chartTextColor,
               height: 1.4,
             ),
           ),
@@ -2518,11 +2624,11 @@ class _HomePageState extends State<HomePage> {
           builder: (BuildContext context) => CupertinoAlertDialog(
             title: Text(
               '오류',
-              style: GoogleFonts.gaegu(fontSize: 17),
+              style: GoogleFonts.gaegu(fontSize: 18),
             ),
             content: Text(
               '데이터를 불러올 수 없습니다.',
-              style: GoogleFonts.gaegu(fontSize: 15),
+              style: GoogleFonts.gaegu(fontSize: 16),
             ),
             actions: [
               CupertinoDialogAction(
@@ -2653,7 +2759,7 @@ class _HomePageState extends State<HomePage> {
                 Text(
                   'AI 일기 분석 중...',
                   style: GoogleFonts.gaegu(
-                    fontSize: 16,
+                    fontSize: 17,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -2661,7 +2767,7 @@ class _HomePageState extends State<HomePage> {
                 Text(
                   '잠시만 기다려주세요',
                   style: GoogleFonts.gaegu(
-                    fontSize: 14,
+                    fontSize: 15,
                     color: CupertinoColors.secondaryLabel,
                   ),
                 ),
@@ -2746,54 +2852,62 @@ class _HomePageState extends State<HomePage> {
       // 새 화면 표시
       showCupertinoModalPopup(
         context: context,
-        builder: (BuildContext context) => CupertinoPageScaffold(
-          navigationBar: CupertinoNavigationBar(
-            middle: Text(
-              '지난 6개월 감정',
-              style: GoogleFonts.gaegu(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
+        builder: (BuildContext popupContext) {
+          final isDark = CupertinoTheme.brightnessOf(popupContext) == Brightness.dark;
+          final gridLabelColor = isDark ? CupertinoColors.white : CupertinoColors.label.resolveFrom(popupContext);
+          final gridCellEmptyColor = isDark ? const Color(0xFF2C2C2E) : CupertinoColors.systemGrey5.resolveFrom(popupContext);
+          final adviceBgColor = isDark ? const Color(0xFF2C2C2E) : CupertinoColors.systemGrey6.resolveFrom(popupContext);
+          final adviceTextColor = isDark ? CupertinoColors.white : CupertinoColors.label.resolveFrom(popupContext);
+          return CupertinoPageScaffold(
+            navigationBar: CupertinoNavigationBar(
+              middle: Text(
+                '지난 6개월 감정',
+                style: GoogleFonts.gaegu(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: gridLabelColor,
+                ),
               ),
-            ),
-            leading: CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: () => Navigator.pop(context),
-              child: const Icon(
-                CupertinoIcons.back,
-                color: AppColors.primary,
-                size: 24,
-              ),
-            ),
-          ),
-          child: SafeArea(
-            child: CupertinoScrollbar(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    _build6MonthMoodGrid(moodMap, context),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: CupertinoColors.systemGrey6,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        _cleanAiAdvice(aiAdvice),
-                        style: GoogleFonts.gaegu(
-                          fontSize: 15,
-                          color: CupertinoColors.label,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ],
+              leading: CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () => Navigator.pop(popupContext),
+                child: const Icon(
+                  CupertinoIcons.back,
+                  color: AppColors.primary,
+                  size: 24,
                 ),
               ),
             ),
-          ),
-        ),
+            child: SafeArea(
+              child: CupertinoScrollbar(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      _build6MonthMoodGrid(moodMap, popupContext, gridLabelColor, gridCellEmptyColor),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: adviceBgColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          _cleanAiAdvice(aiAdvice),
+                          style: GoogleFonts.gaegu(
+                            fontSize: 16,
+                            color: adviceTextColor,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       );
     } catch (e) {
       if (!mounted) return;
@@ -2802,11 +2916,11 @@ class _HomePageState extends State<HomePage> {
         builder: (BuildContext context) => CupertinoAlertDialog(
           title: Text(
             '오류',
-            style: GoogleFonts.gaegu(fontSize: 17),
+            style: GoogleFonts.gaegu(fontSize: 18),
           ),
           content: Text(
             '데이터를 불러올 수 없습니다.',
-            style: GoogleFonts.gaegu(fontSize: 15),
+            style: GoogleFonts.gaegu(fontSize: 16),
           ),
           actions: [
             CupertinoDialogAction(
@@ -2821,7 +2935,10 @@ class _HomePageState extends State<HomePage> {
 
   // 6개월 감정 그리드 표시
   Widget _build6MonthMoodGrid(
-      Map<String, Color> moodMap, BuildContext popupContext) {
+      Map<String, Color> moodMap,
+      BuildContext popupContext,
+      Color gridLabelColor,
+      Color gridCellEmptyColor) {
     final today = DateTime.now();
     final sixMonthsAgo = DateTime(today.year, today.month - 5, 1);
 
@@ -2889,16 +3006,17 @@ class _HomePageState extends State<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     SizedBox(
-                      width: 65,
+                      width: 42,
                       child: isFirstRow
                           ? Text(
-                              "'$yearShort년 $monthStr월",
+                              "'$yearShort.$monthStr",
                               style: GoogleFonts.gaegu(
-                                fontSize: 14,
+                                fontSize: 15,
                                 fontWeight: FontWeight.w600,
-                                color: CupertinoColors.label,
+                                color: gridLabelColor,
                               ),
-                              overflow: TextOverflow.visible,
+                              softWrap: false,
+                              overflow: TextOverflow.clip,
                             )
                           : const SizedBox.shrink(),
                     ),
@@ -2930,7 +3048,7 @@ class _HomePageState extends State<HomePage> {
                                   margin:
                                       const EdgeInsets.symmetric(horizontal: 1),
                                   decoration: BoxDecoration(
-                                    color: color ?? CupertinoColors.systemGrey5,
+                                    color: color ?? gridCellEmptyColor,
                                     borderRadius: BorderRadius.circular(2),
                                   ),
                                 ),
@@ -2975,11 +3093,11 @@ class _HomePageState extends State<HomePage> {
           builder: (BuildContext context) => CupertinoAlertDialog(
             title: Text(
               '오류',
-              style: GoogleFonts.gaegu(fontSize: 17),
+              style: GoogleFonts.gaegu(fontSize: 18),
             ),
             content: Text(
               '데이터를 불러올 수 없습니다.',
-              style: GoogleFonts.gaegu(fontSize: 15),
+              style: GoogleFonts.gaegu(fontSize: 16),
             ),
             actions: [
               CupertinoDialogAction(
@@ -3110,7 +3228,7 @@ class _HomePageState extends State<HomePage> {
                 Text(
                   'AI 일기 분석 중...',
                   style: GoogleFonts.gaegu(
-                    fontSize: 16,
+                    fontSize: 17,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -3118,7 +3236,7 @@ class _HomePageState extends State<HomePage> {
                 Text(
                   '잠시만 기다려주세요',
                   style: GoogleFonts.gaegu(
-                    fontSize: 14,
+                    fontSize: 15,
                     color: CupertinoColors.secondaryLabel,
                   ),
                 ),
@@ -3203,54 +3321,62 @@ class _HomePageState extends State<HomePage> {
       // 새 화면 표시
       showCupertinoModalPopup(
         context: context,
-        builder: (BuildContext context) => CupertinoPageScaffold(
-          navigationBar: CupertinoNavigationBar(
-            middle: Text(
-              '지난 1년 감정',
-              style: GoogleFonts.gaegu(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
+        builder: (BuildContext popupContext) {
+          final isDark = CupertinoTheme.brightnessOf(popupContext) == Brightness.dark;
+          final gridLabelColor = isDark ? CupertinoColors.white : CupertinoColors.label.resolveFrom(popupContext);
+          final gridCellEmptyColor = isDark ? const Color(0xFF2C2C2E) : CupertinoColors.systemGrey5.resolveFrom(popupContext);
+          final adviceBgColor = isDark ? const Color(0xFF2C2C2E) : CupertinoColors.systemGrey6.resolveFrom(popupContext);
+          final adviceTextColor = isDark ? CupertinoColors.white : CupertinoColors.label.resolveFrom(popupContext);
+          return CupertinoPageScaffold(
+            navigationBar: CupertinoNavigationBar(
+              middle: Text(
+                '지난 1년 감정',
+                style: GoogleFonts.gaegu(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: gridLabelColor,
+                ),
               ),
-            ),
-            leading: CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: () => Navigator.pop(context),
-              child: const Icon(
-                CupertinoIcons.back,
-                color: AppColors.primary,
-                size: 24,
-              ),
-            ),
-          ),
-          child: SafeArea(
-            child: CupertinoScrollbar(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    _build1YearMoodGrid(moodMap, context),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: CupertinoColors.systemGrey6,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        _cleanAiAdvice(aiAdvice),
-                        style: GoogleFonts.gaegu(
-                          fontSize: 15,
-                          color: CupertinoColors.label,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ],
+              leading: CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () => Navigator.pop(popupContext),
+                child: const Icon(
+                  CupertinoIcons.back,
+                  color: AppColors.primary,
+                  size: 24,
                 ),
               ),
             ),
-          ),
-        ),
+            child: SafeArea(
+              child: CupertinoScrollbar(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      _build1YearMoodGrid(moodMap, popupContext, gridLabelColor, gridCellEmptyColor),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: adviceBgColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          _cleanAiAdvice(aiAdvice),
+                          style: GoogleFonts.gaegu(
+                            fontSize: 16,
+                            color: adviceTextColor,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       );
     } catch (e) {
       if (!mounted) return;
@@ -3259,11 +3385,11 @@ class _HomePageState extends State<HomePage> {
         builder: (BuildContext context) => CupertinoAlertDialog(
           title: Text(
             '오류',
-            style: GoogleFonts.gaegu(fontSize: 17),
+            style: GoogleFonts.gaegu(fontSize: 18),
           ),
           content: Text(
             '데이터를 불러올 수 없습니다.',
-            style: GoogleFonts.gaegu(fontSize: 15),
+            style: GoogleFonts.gaegu(fontSize: 16),
           ),
           actions: [
             CupertinoDialogAction(
@@ -3278,7 +3404,10 @@ class _HomePageState extends State<HomePage> {
 
   // 1년 감정 그리드 표시
   Widget _build1YearMoodGrid(
-      Map<String, Color> moodMap, BuildContext popupContext) {
+      Map<String, Color> moodMap,
+      BuildContext popupContext,
+      Color gridLabelColor,
+      Color gridCellEmptyColor) {
     final today = DateTime.now();
     final oneYearAgo = DateTime(today.year, today.month - 11, 1);
 
@@ -3346,16 +3475,17 @@ class _HomePageState extends State<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     SizedBox(
-                      width: 65,
+                      width: 42,
                       child: isFirstRow
                           ? Text(
-                              "'$yearShort년 $monthStr월",
+                              "'$yearShort.$monthStr",
                               style: GoogleFonts.gaegu(
-                                fontSize: 14,
+                                fontSize: 15,
                                 fontWeight: FontWeight.w600,
-                                color: CupertinoColors.label,
+                                color: gridLabelColor,
                               ),
-                              overflow: TextOverflow.visible,
+                              softWrap: false,
+                              overflow: TextOverflow.clip,
                             )
                           : const SizedBox.shrink(),
                     ),
@@ -3387,7 +3517,7 @@ class _HomePageState extends State<HomePage> {
                                   margin:
                                       const EdgeInsets.symmetric(horizontal: 1),
                                   decoration: BoxDecoration(
-                                    color: color ?? CupertinoColors.systemGrey5,
+                                    color: color ?? gridCellEmptyColor,
                                     borderRadius: BorderRadius.circular(2),
                                   ),
                                 ),
@@ -3479,135 +3609,168 @@ class _HomePageState extends State<HomePage> {
       // 새 화면 표시
       showCupertinoModalPopup(
         context: context,
-        builder: (BuildContext context) => CupertinoPageScaffold(
-          navigationBar: CupertinoNavigationBar(
-            middle: Text(
-              '$currentMonth월 $currentDay일의 추억',
-              style: GoogleFonts.gaegu(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
+        builder: (BuildContext popupContext) {
+          final isDark = CupertinoTheme.brightnessOf(popupContext) == Brightness.dark;
+          final titleColor = isDark ? CupertinoColors.white : CupertinoColors.label.resolveFrom(popupContext);
+          final cardEmptyBg = isDark ? const Color(0xFF2C2C2E) : CupertinoColors.systemGrey6.resolveFrom(popupContext);
+          final bodyTextColor = isDark ? CupertinoColors.white : CupertinoColors.label.resolveFrom(popupContext);
+          final adviceBoxBg = isDark ? const Color(0xFF2C2C2E) : CupertinoColors.systemGrey6.resolveFrom(popupContext);
+          final adviceTextColor = isDark ? CupertinoColors.white : CupertinoColors.label.resolveFrom(popupContext);
+          return CupertinoPageScaffold(
+            navigationBar: CupertinoNavigationBar(
+              middle: Text(
+                '$currentMonth월 $currentDay일의 추억',
+                style: GoogleFonts.gaegu(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: titleColor,
+                ),
+              ),
+              leading: CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () => Navigator.pop(popupContext),
+                child: const Icon(
+                  CupertinoIcons.back,
+                  color: AppColors.primary,
+                  size: 24,
+                ),
               ),
             ),
-            leading: CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: () => Navigator.pop(context),
-              child: const Icon(
-                CupertinoIcons.back,
-                color: AppColors.primary,
-                size: 24,
-              ),
-            ),
-          ),
-          child: SafeArea(
-            child: sameDayEntries.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          CupertinoIcons.calendar,
-                          size: 60,
-                          color: CupertinoColors.systemGrey3,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          '아직 이날 기록이 없네요',
-                          style: GoogleFonts.gaegu(
-                            fontSize: 16,
-                            color: CupertinoColors.secondaryLabel,
+            child: SafeArea(
+              child: sameDayEntries.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            CupertinoIcons.calendar,
+                            size: 60,
+                            color: isDark ? CupertinoColors.tertiaryLabel : CupertinoColors.systemGrey3,
                           ),
-                        ),
-                      ],
-                    ),
-                  )
-                : CupertinoScrollbar(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: sameDayEntries.length,
-                      itemBuilder: (context, index) {
-                        final entry = sameDayEntries[index];
-                        final year = entry['year'] as int;
-                        final content = entry['content'] as String;
-                        final moodAnalysis =
-                            entry['moodAnalysis'] as Map<String, dynamic>?;
+                          const SizedBox(height: 16),
+                          Text(
+                            '아직 이날 기록이 없네요',
+                            style: GoogleFonts.gaegu(
+                              fontSize: 17,
+                              color: bodyTextColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : CupertinoScrollbar(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: sameDayEntries.length,
+                        itemBuilder: (context, index) {
+                          final entry = sameDayEntries[index];
+                          final year = entry['year'] as int;
+                          final content = entry['content'] as String;
+                          final moodAnalysis =
+                              entry['moodAnalysis'] as Map<String, dynamic>?;
 
-                        // 감정 색상 가져오기
-                        Color? emotionColor;
-                        if (moodAnalysis != null) {
-                          final emotions = moodAnalysis['emotions'] as List?;
-                          if (emotions != null && emotions.isNotEmpty) {
-                            final mainEmotion = emotions[0] as String;
-                            emotionColor = _getEmotionColor(mainEmotion);
+                          // 주요 감정 및 색상
+                          String? mainEmotionLabel;
+                          Color? emotionColor;
+                          if (moodAnalysis != null) {
+                            final emotions = moodAnalysis['emotions'] as List?;
+                            if (emotions != null && emotions.isNotEmpty) {
+                              mainEmotionLabel = emotions[0] as String;
+                              emotionColor = _getEmotionColor(mainEmotionLabel);
+                            }
                           }
-                        }
 
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: emotionColor != null
-                                ? emotionColor.withOpacity(0.3)
-                                : CupertinoColors.systemGrey6,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '$year년',
-                                style: GoogleFonts.gaegu(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                content,
-                                style: GoogleFonts.gaegu(
-                                  fontSize: 15,
-                                  color: CupertinoColors.label,
-                                  height: 1.5,
-                                ),
-                              ),
-                              if (moodAnalysis != null) ...[
-                                const SizedBox(height: 12),
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: CupertinoColors.white,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        CupertinoIcons.heart_fill,
-                                        size: 20,
-                                        color: AppColors.primary,
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: emotionColor != null
+                                  ? emotionColor.withOpacity(0.3)
+                                  : cardEmptyBg,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      '$year년',
+                                      style: GoogleFonts.gaegu(
+                                        fontSize: 19,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? CupertinoColors.white : AppColors.primary,
                                       ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
+                                    ),
+                                    if (mainEmotionLabel != null && emotionColor != null) ...[
+                                      const SizedBox(width: 10),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: emotionColor,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
                                         child: Text(
-                                          _cleanAiAdvice(
-                                              moodAnalysis['advice'] ?? ''),
+                                          mainEmotionLabel,
                                           style: GoogleFonts.gaegu(
-                                            fontSize: 13,
-                                            color: CupertinoColors.label,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: CupertinoColors.white,
                                           ),
                                         ),
                                       ),
                                     ],
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  content,
+                                  style: GoogleFonts.gaegu(
+                                    fontSize: 16,
+                                    color: bodyTextColor,
+                                    height: 1.5,
                                   ),
                                 ),
+                                if (moodAnalysis != null) ...[
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: adviceBoxBg,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          CupertinoIcons.heart_fill,
+                                          size: 20,
+                                          color: AppColors.primary,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            _cleanAiAdvice(
+                                                moodAnalysis['advice'] ?? ''),
+                                            style: GoogleFonts.gaegu(
+                                              fontSize: 14,
+                                              color: adviceTextColor,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ],
-                            ],
-                          ),
-                        );
-                      },
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                  ),
-          ),
-        ),
+            ),
+          );
+        },
       );
     } catch (e) {
       if (!mounted) return;
@@ -3616,11 +3779,11 @@ class _HomePageState extends State<HomePage> {
         builder: (BuildContext context) => CupertinoAlertDialog(
           title: Text(
             '오류',
-            style: GoogleFonts.gaegu(fontSize: 17),
+            style: GoogleFonts.gaegu(fontSize: 18),
           ),
           content: Text(
             '데이터를 불러올 수 없습니다.',
-            style: GoogleFonts.gaegu(fontSize: 15),
+            style: GoogleFonts.gaegu(fontSize: 16),
           ),
           actions: [
             CupertinoDialogAction(
@@ -3669,7 +3832,7 @@ class _HomePageState extends State<HomePage> {
                       child: Text(
                         '취소',
                         style: GoogleFonts.gaegu(
-                          fontSize: 16,
+                          fontSize: 17,
                           color: CupertinoColors.destructiveRed,
                         ),
                       ),
@@ -3677,7 +3840,7 @@ class _HomePageState extends State<HomePage> {
                     Text(
                       '년월 선택',
                       style: GoogleFonts.gaegu(
-                        fontSize: 17,
+                        fontSize: 18,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -3705,7 +3868,7 @@ class _HomePageState extends State<HomePage> {
                       child: Text(
                         '확인',
                         style: GoogleFonts.gaegu(
-                          fontSize: 16,
+                          fontSize: 17,
                           color: AppColors.primary,
                         ),
                       ),
@@ -3731,7 +3894,7 @@ class _HomePageState extends State<HomePage> {
                             child: Text(
                               '$year년',
                               style: GoogleFonts.gaegu(
-                                fontSize: isSelected ? 18 : 16,
+                                fontSize: isSelected ? 19 : 17,
                                 fontWeight: isSelected
                                     ? FontWeight.w600
                                     : FontWeight.w400,
@@ -3765,7 +3928,7 @@ class _HomePageState extends State<HomePage> {
                             child: Text(
                               '$month월',
                               style: GoogleFonts.gaegu(
-                                fontSize: isSelected ? 18 : 16,
+                                fontSize: isSelected ? 19 : 17,
                                 fontWeight: isSelected
                                     ? FontWeight.w600
                                     : FontWeight.w400,

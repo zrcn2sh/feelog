@@ -60,6 +60,9 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   path_provider: ^2.1.1
+  share_plus: ^10.0.0
+  file_picker: ^8.0.0
+  encrypt: ^5.0.3
   
   # Google Fonts for Nunito (8.x: FontWeight const map 호환)
   google_fonts: ^8.0.0

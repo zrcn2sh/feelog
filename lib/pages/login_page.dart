@@ -132,7 +132,7 @@ class _LoginPageState extends State<LoginPage> {
               Text(
                 'Feelog',
                 style: GoogleFonts.gaegu(
-                  fontSize: 36,
+                  fontSize: 37,
                   fontWeight: FontWeight.w700,
                   color: CupertinoColors.label,
                   letterSpacing: -0.5,
@@ -146,7 +146,7 @@ class _LoginPageState extends State<LoginPage> {
                 '당신의 감정을 기록하고 관리하세요',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.gaegu(
-                  fontSize: 17,
+                  fontSize: 18,
                   color: CupertinoColors.secondaryLabel,
                   fontWeight: FontWeight.w400,
                 ),
@@ -177,7 +177,7 @@ class _LoginPageState extends State<LoginPage> {
                             Text(
                               'Google로 계속하기',
                               style: GoogleFonts.gaegu(
-                                fontSize: 17,
+                                fontSize: 18,
                                 fontWeight: FontWeight.w600,
                                 color: CupertinoColors.white,
                               ),
@@ -209,7 +209,7 @@ class _LoginPageState extends State<LoginPage> {
                       Text(
                         'Apple로 계속하기',
                         style: GoogleFonts.gaegu(
-                          fontSize: 17,
+                          fontSize: 18,
                           fontWeight: FontWeight.w600,
                           color: CupertinoColors.white,
                         ),
@@ -226,7 +226,7 @@ class _LoginPageState extends State<LoginPage> {
                 '로그인하면 서비스 이용약관 및 개인정보처리방침에\n동의하는 것으로 간주됩니다.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.gaegu(
-                  fontSize: 13,
+                  fontSize: 14,
                   color: CupertinoColors.secondaryLabel,
                   fontWeight: FontWeight.w400,
                 ),
@@ -240,7 +240,7 @@ class _LoginPageState extends State<LoginPage> {
                   Text(
                     'v${AppVersion.version}',
                     style: GoogleFonts.gaegu(
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: FontWeight.w400,
                       color: CupertinoColors.secondaryLabel,
                     ),
@@ -249,7 +249,7 @@ class _LoginPageState extends State<LoginPage> {
                   Text(
                     'by ${AppVersion.developer}',
                     style: GoogleFonts.gaegu(
-                      fontSize: 11,
+                      fontSize: 12,
                       fontWeight: FontWeight.w400,
                       color: CupertinoColors.tertiaryLabel,
                     ),

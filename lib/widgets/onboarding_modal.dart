@@ -7,8 +7,6 @@ import '../main.dart';
 /// 첫 로그인 시 한 번만 보여주는 설명 모달.
 /// [onComplete]에서 SharedPreferences에 '본 적 있음' 저장 후 호출.
 class OnboardingModal extends StatelessWidget {
-  /// 설명 문구용 진한 회색 (가독성)
-  static const Color descriptionGray = Color(0xFF5A5A5A);
   const OnboardingModal({
     super.key,
     required this.onComplete,
@@ -32,6 +30,14 @@ class OnboardingModal extends StatelessWidget {
     await prefs.setBool(key, true);
   }
 
+  /// 다크 모드: 어두운 회색 배경, 라이트 모드: 시스템 배경
+  static Color _modalBackgroundColor(BuildContext context) {
+    if (CupertinoTheme.brightnessOf(context) == Brightness.dark) {
+      return const Color(0xFF2C2C2E);
+    }
+    return CupertinoColors.systemBackground.resolveFrom(context);
+  }
+
   /// 홈의 6M/1Y/SD 버튼과 같은 둥근 버튼 + 설명 한 줄
   static Widget _buildChipRow(
       BuildContext context, String label, String description) {
@@ -49,7 +55,7 @@ class OnboardingModal extends StatelessWidget {
             child: Text(
               label,
               style: GoogleFonts.gaegu(
-                fontSize: 14,
+                fontSize: 15,
                 fontWeight: FontWeight.w600,
                 color: CupertinoColors.white,
               ),
@@ -60,9 +66,9 @@ class OnboardingModal extends StatelessWidget {
             child: Text(
               description,
               style: GoogleFonts.gaegu(
-                fontSize: 14,
+                fontSize: 15,
                 height: 1.35,
-                color: descriptionGray,
+                color: CupertinoColors.secondaryLabel.resolveFrom(context),
               ),
             ),
           ),
@@ -89,7 +95,7 @@ class OnboardingModal extends StatelessWidget {
             ),
             child: Container(
               decoration: BoxDecoration(
-                color: CupertinoColors.systemBackground.resolveFrom(context),
+                color: _modalBackgroundColor(context),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
@@ -114,7 +120,7 @@ class OnboardingModal extends StatelessWidget {
                     Text(
                       'Feelog에 오신 것을 환영해요',
                       style: GoogleFonts.gaegu(
-                        fontSize: 22,
+                        fontSize: 23,
                         fontWeight: FontWeight.bold,
                         color: CupertinoColors.label.resolveFrom(context),
                       ),
@@ -124,9 +130,9 @@ class OnboardingModal extends StatelessWidget {
                     Text(
                       '이 앱에서는 오늘 하루의 일기를 작성하고,\nAI가 감정을 분석해 드려요.\n달력에서 날짜를 선택해 일기를 쓰고 저장해 보세요.',
                       style: GoogleFonts.gaegu(
-                        fontSize: 16,
+                        fontSize: 17,
                         height: 1.4,
-                        color: descriptionGray,
+                        color: CupertinoColors.secondaryLabel.resolveFrom(context),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -160,7 +166,7 @@ class OnboardingModal extends StatelessWidget {
                           Text(
                             '※ 일기 데이터 안내',
                             style: GoogleFonts.gaegu(
-                              fontSize: 14,
+                              fontSize: 15,
                               fontWeight: FontWeight.w600,
                               color: CupertinoColors.label.resolveFrom(context),
                             ),
@@ -168,12 +174,11 @@ class OnboardingModal extends StatelessWidget {
                           const SizedBox(height: 6),
                           Text(
                             '· 일기 데이터는 이 기기(휴대폰)에만 저장\n'
-                            '· 앱·데이터 삭제 시에 저장된 일기는 복구 불가\n'
-                            '· 백업 기능은 추후 오픈 예정',
+                            '· 앱·데이터 삭제 시에 저장된 일기는 복구 불가',
                             style: GoogleFonts.gaegu(
-                              fontSize: 13,
+                              fontSize: 14,
                               height: 1.45,
-                              color: descriptionGray,
+                              color: CupertinoColors.secondaryLabel.resolveFrom(context),
                             ),
                           ),
                         ],
@@ -189,7 +194,7 @@ class OnboardingModal extends StatelessWidget {
                         child: Text(
                           '시작하기',
                           style: GoogleFonts.gaegu(
-                            fontSize: 17,
+                            fontSize: 18,
                             fontWeight: FontWeight.w600,
                             color: CupertinoColors.white,
                           ),

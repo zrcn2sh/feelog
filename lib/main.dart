@@ -8,9 +8,11 @@ import 'dart:io' show Platform;
 import 'firebase_options.dart';
 import 'pages/login_page.dart';
 import 'pages/home_page.dart';
+import 'pages/settings_page.dart';
 import 'services/auth_service.dart';
 import 'services/ai_service.dart';
 import 'config/app_secret.dart';
+import 'config/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,11 +29,18 @@ void main() async {
   // AI 서비스 초기화 (Gemini API 키 설정)
   AIService.setApiKey(AppSecret.geminiApiKey);
 
+  // 테마 설정 로드 (시스템 따르기 | 라이트 | 다크)
+  final themePreference = await AppTheme.loadThemePreference();
+  final appTheme = AppTheme(initialPreference: themePreference);
+
   if (kDebugMode) {
     print('ℹ️ Hive 초기화는 사용자 로그인 후 HomePage에서 수행됩니다.');
   }
 
-  runApp(const MyApp());
+  runApp(AppThemeScope(
+    notifier: appTheme,
+    child: MyApp(theme: appTheme),
+  ));
 }
 
 // 앱 테마 색상 정의 (아이콘 보라색 기반)
@@ -43,8 +52,39 @@ class AppColors {
   static const Color accent = Color(0xFFEC4899); // 핑크 액센트
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MyApp extends StatefulWidget {
+  const MyApp({super.key, required this.theme});
+
+  final AppTheme theme;
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    widget.theme.addListener(_onThemeChanged);
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    widget.theme.removeListener(_onThemeChanged);
+    super.dispose();
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    super.didChangePlatformBrightness();
+    widget.theme.handlePlatformBrightnessChanged();
+  }
+
+  void _onThemeChanged() {
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,12 +93,16 @@ class MyApp extends StatelessWidget {
       title: 'Feelog',
       theme: CupertinoThemeData(
         primaryColor: AppColors.primary,
-        brightness: Brightness.light,
+        brightness: widget.theme.brightness,
         textTheme: CupertinoTextThemeData(
-          primaryColor: CupertinoColors.label,
+          primaryColor: widget.theme.brightness == Brightness.dark
+              ? CupertinoColors.white
+              : CupertinoColors.label,
           textStyle: GoogleFonts.gaegu(
-            color: CupertinoColors.label,
-            fontSize: 17,
+            color: widget.theme.brightness == Brightness.dark
+                ? CupertinoColors.white
+                : CupertinoColors.label,
+            fontSize: 18,
             fontWeight: FontWeight.w400,
           ),
         ),
@@ -67,6 +111,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginPage(),
         '/home': (context) => const HomePage(),
+        '/settings': (context) => const SettingsPage(),
       },
     );
   }

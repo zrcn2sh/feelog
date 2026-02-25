@@ -573,6 +573,70 @@ class LocalDiaryService {
     _currentUserId = null;
   }
 
+  /// 백업용: 일기 + 기간별 분석 전체를 JSON 직렬 가능한 Map으로 내보내기
+  /// (폰 바꿀 때 등 데이터 옮기기용)
+  static Map<String, dynamic> exportAllData() {
+    if (kIsWeb || !_initialized || _diaryBox == null) {
+      return {'diaries': {}, 'periodAnalysis': {}, 'version': 1, 'exportedAt': DateTime.now().toIso8601String()};
+    }
+    final diaries = <String, dynamic>{};
+    for (final key in _diaryBox!.keys) {
+      final keyStr = key.toString();
+      final mapData = _diaryBox!.get(key);
+      if (mapData != null) {
+        diaries[keyStr] = mapData.cast<String, dynamic>();
+      }
+    }
+    final periodAnalysis = <String, dynamic>{};
+    if (_analysisBox != null && _analysisBox!.isOpen) {
+      for (final key in _analysisBox!.keys) {
+        final keyStr = key.toString();
+        final data = _analysisBox!.get(key);
+        if (data != null) {
+          periodAnalysis[keyStr] = (data as Map).cast<String, dynamic>();
+        }
+      }
+    }
+    return {
+      'version': 1,
+      'exportedAt': DateTime.now().toIso8601String(),
+      'diaries': diaries,
+      'periodAnalysis': periodAnalysis,
+    };
+  }
+
+  /// 백업 파일에서 데이터 가져오기 (같은 날짜는 백업 내용으로 덮어씀)
+  static Future<void> importAllData(Map<String, dynamic> data) async {
+    if (kIsWeb || !_initialized) {
+      throw Exception('로컬 저장소가 초기화되지 않았습니다. 로그인 후 다시 시도하세요.');
+    }
+    if (_diaryBox == null) throw Exception('일기 저장소를 사용할 수 없습니다.');
+
+    final diaries = data['diaries'];
+    if (diaries is Map) {
+      for (final entry in diaries.entries) {
+        final key = entry.key.toString();
+        final value = entry.value;
+        if (value is Map) {
+          final safeMap = value is Map<String, dynamic> ? value : value.cast<String, dynamic>();
+          await _diaryBox!.put(key, safeMap);
+        }
+      }
+    }
+
+    final periodAnalysis = data['periodAnalysis'];
+    if (periodAnalysis is Map && _analysisBox != null) {
+      for (final entry in periodAnalysis.entries) {
+        final key = entry.key.toString();
+        final value = entry.value;
+        if (value is Map) {
+          final safeMap = value is Map<String, dynamic> ? value : value.cast<String, dynamic>();
+          await _analysisBox!.put(key, safeMap);
+        }
+      }
+    }
+  }
+
   /// 특정 사용자의 Hive 데이터 전체 삭제 (계정 탈퇴 시 호출)
   static Future<void> deleteUserData(String userId) async {
     if (kIsWeb) return;
