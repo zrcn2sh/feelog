@@ -13,10 +13,14 @@ class MoodAnalysisResult {
   });
 
   factory MoodAnalysisResult.fromJson(Map<String, dynamic> json) {
+    final emotions = List<String>.from(json['emotions'] as List);
+    final moodWeights = Map<String, double>.from(json['moodWeights'] as Map);
+    // 비율이 높은 순으로 정렬 → 가장 높은 감정(색상)이 제일 왼쪽에 표시되도록
+    emotions.sort((a, b) => (moodWeights[b] ?? 0).compareTo(moodWeights[a] ?? 0));
     return MoodAnalysisResult(
-      emotions: List<String>.from(json['emotions'] as List),
+      emotions: emotions,
       advice: json['advice'] as String,
-      moodWeights: Map<String, double>.from(json['moodWeights'] as Map),
+      moodWeights: moodWeights,
     );
   }
 }
