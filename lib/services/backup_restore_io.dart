@@ -143,7 +143,7 @@ String _encrypt(String plain, String password) {
   final iv = enc.IV(Uint8List.fromList(ivBytes));
   final encrypter = enc.Encrypter(enc.AES(key, mode: enc.AESMode.cbc));
   final encrypted = encrypter.encrypt(plain, iv: iv);
-  final combined = [...salt, ...ivBytes, ...encrypted.bytes.toList()];
+  final combined = [...salt, ...ivBytes, ...encrypted.bytes];
   return base64Encode(combined);
 }
 

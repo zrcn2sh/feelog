@@ -9,6 +9,7 @@ import '../services/ai_service.dart';
 import '../services/local_diary_service.dart';
 import '../models/diary_entry.dart';
 import '../widgets/onboarding_modal.dart';
+import '../widgets/analyzing_ad_dialog_stub.dart' if (dart.library.io) '../widgets/analyzing_ad_dialog.dart' as analyzing_dialog;
 import '../main.dart';
 import 'settings_page.dart';
 
@@ -1468,6 +1469,82 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// 일기 저장 실제 처리 (분석 + Firestore/Hive 저장). 예외 시 throw.
+  Future<void> _performSaveDiaryWork() async {
+    final user = _authService.getCurrentUser();
+    if (user == null) {
+      throw Exception('로그인이 필요합니다.');
+    }
+
+    final dateStr =
+        '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
+
+    setState(() {
+      _isAnalyzing = true;
+    });
+
+    final moodAnalysis = await _aiService.analyzeDiary(_diaryController.text);
+
+    setState(() {
+      _isAnalyzing = false;
+      _currentMoodAnalysis = moodAnalysis;
+    });
+
+    final diaryData = {
+      'date': Timestamp.fromDate(DateTime(
+          _selectedDate.year, _selectedDate.month, _selectedDate.day)),
+      'content': _diaryController.text,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    if (moodAnalysis != null) {
+      diaryData['moodAnalysis'] = {
+        'emotions': moodAnalysis.emotions,
+        'moodWeights': moodAnalysis.moodWeights,
+        'advice': moodAnalysis.advice,
+      };
+    }
+
+    if (kIsWeb) {
+      print('🌐 웹 환경 - Firebase에 일기 저장: $dateStr');
+      await FirebaseFirestore.instance
+          .collection('diaries')
+          .doc(user.uid)
+          .collection('entries')
+          .doc(dateStr)
+          .set(diaryData);
+      print('✅ Firebase 저장 완료');
+    } else {
+      print('═══════════════════════════════════════');
+      print('📱 모바일 환경 - Hive에 일기 저장 시작');
+      print('📅 날짜: $dateStr');
+      print('📝 내용 길이: ${_diaryController.text.length}자');
+      print('🎭 감정 분석: ${moodAnalysis != null ? "있음" : "없음"}');
+
+      final diaryEntry = DiaryEntry(
+        date: DateTime(
+            _selectedDate.year, _selectedDate.month, _selectedDate.day),
+        content: _diaryController.text,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        moodAnalysis: moodAnalysis,
+      );
+      print('📦 DiaryEntry 객체 생성 완료');
+
+      await LocalDiaryService.saveDiary(dateStr, diaryEntry);
+      print('✅ Hive 저장 완료');
+
+      final savedEntry = LocalDiaryService.loadDiary(dateStr);
+      if (savedEntry != null) {
+        print('✅ 저장 확인 성공 - 내용: ${savedEntry.content.length}자');
+      } else {
+        print('⚠️ 저장 확인 실패 - 일기를 찾을 수 없습니다');
+      }
+      print('═══════════════════════════════════════');
+    }
+  }
+
   Future<void> _saveDiary() async {
     if (_diaryController.text.trim().isEmpty) {
       showCupertinoDialog(
@@ -1497,92 +1574,34 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    // Firestore에 일기 저장
     try {
-      final user = _authService.getCurrentUser();
-      if (user == null) {
-        throw Exception('로그인이 필요합니다.');
+      // 모바일: "일기 분석 중" 모달 + AdMob 배너 표시 (최소 3초). Cupertino 모달 사용으로 MaterialLocalizations 불필요.
+      if (!kIsWeb) {
+        showCupertinoModalPopup<void>(
+          context: context,
+          builder: (ctx) => Stack(
+            alignment: Alignment.center,
+            children: [
+              GestureDetector(
+                onTap: () {},
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  color: CupertinoColors.black.withOpacity(0.4),
+                ),
+              ),
+              const analyzing_dialog.AnalyzingAdDialog(),
+            ],
+          ),
+        );
       }
 
-      // 날짜를 문자열로 변환 (YYYY-MM-DD 형식)
-      final dateStr =
-          '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
+      await Future.wait([
+        Future.delayed(const Duration(seconds: 5)),
+        _performSaveDiaryWork(),
+      ]);
 
-      // AI 감정 분석 실행
-      setState(() {
-        _isAnalyzing = true;
-      });
-
-      final moodAnalysis = await _aiService.analyzeDiary(_diaryController.text);
-
-      setState(() {
-        _isAnalyzing = false;
-        _currentMoodAnalysis = moodAnalysis;
-      });
-
-      // Firestore에 일기 및 감정 분석 결과 저장
-      final diaryData = {
-        'date': Timestamp.fromDate(DateTime(
-            _selectedDate.year, _selectedDate.month, _selectedDate.day)),
-        'content': _diaryController.text,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
-
-      // AI 분석 결과 추가
-      if (moodAnalysis != null) {
-        diaryData['moodAnalysis'] = {
-          'emotions': moodAnalysis.emotions,
-          'moodWeights': moodAnalysis.moodWeights,
-          'advice': moodAnalysis.advice,
-        };
-      }
-
-      if (kIsWeb) {
-        // 웹: Firebase에 저장
-        print('🌐 웹 환경 - Firebase에 일기 저장: $dateStr');
-        await FirebaseFirestore.instance
-            .collection('diaries')
-            .doc(user.uid)
-            .collection('entries')
-            .doc(dateStr)
-            .set(diaryData);
-        print('✅ Firebase 저장 완료');
-      } else {
-        // 모바일: Hive에 저장
-        print('═══════════════════════════════════════');
-        print('📱 모바일 환경 - Hive에 일기 저장 시작');
-        print('📅 날짜: $dateStr');
-        print('📝 내용 길이: ${_diaryController.text.length}자');
-        print('🎭 감정 분석: ${moodAnalysis != null ? "있음" : "없음"}');
-
-        try {
-          final diaryEntry = DiaryEntry(
-            date: DateTime(
-                _selectedDate.year, _selectedDate.month, _selectedDate.day),
-            content: _diaryController.text,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            moodAnalysis: moodAnalysis,
-          );
-          print('📦 DiaryEntry 객체 생성 완료');
-
-          await LocalDiaryService.saveDiary(dateStr, diaryEntry);
-          print('✅ Hive 저장 완료');
-
-          // 저장 확인
-          final savedEntry = LocalDiaryService.loadDiary(dateStr);
-          if (savedEntry != null) {
-            print('✅ 저장 확인 성공 - 내용: ${savedEntry.content.length}자');
-          } else {
-            print('⚠️ 저장 확인 실패 - 일기를 찾을 수 없습니다');
-          }
-        } catch (e, stackTrace) {
-          print('❌ Hive 저장 오류: $e');
-          print('스택 트레이스: $stackTrace');
-          rethrow; // 에러를 상위로 전달
-        }
-        print('═══════════════════════════════════════');
+      if (!kIsWeb && mounted) {
+        Navigator.of(context).pop(); // 분석 모달 닫기
       }
 
       if (mounted) {
@@ -1617,10 +1636,12 @@ class _HomePageState extends State<HomePage> {
         );
       }
 
-      // 저장 후 일기 날짜 목록 업데이트 및 현재 날짜 일기 다시 로드
       _loadDiaryDates();
       _loadDiaryForDate(_selectedDate);
     } catch (e) {
+      if (!kIsWeb && mounted) {
+        Navigator.of(context).pop(); // 분석 모달 닫기
+      }
       if (mounted) {
         showCupertinoDialog(
           context: context,

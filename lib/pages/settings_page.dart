@@ -110,7 +110,7 @@ class SettingsPage extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(CupertinoIcons.square_arrow_up,
+                              const Icon(CupertinoIcons.square_arrow_up,
                                   size: 20, color: CupertinoColors.activeBlue),
                               const SizedBox(width: 6),
                               Text(
@@ -133,7 +133,7 @@ class SettingsPage extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(CupertinoIcons.square_arrow_down,
+                              const Icon(CupertinoIcons.square_arrow_down,
                                   size: 20, color: CupertinoColors.activeBlue),
                               const SizedBox(width: 6),
                               Text(

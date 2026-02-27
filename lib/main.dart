@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'dart:io' show Platform;
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'firebase_options.dart';
 import 'pages/login_page.dart';
 import 'pages/home_page.dart';
@@ -32,6 +33,11 @@ void main() async {
   // 테마 설정 로드 (시스템 따르기 | 라이트 | 다크)
   final themePreference = await AppTheme.loadThemePreference();
   final appTheme = AppTheme(initialPreference: themePreference);
+
+  // AdMob 초기화 (모바일만)
+  if (!kIsWeb) {
+    await MobileAds.instance.initialize();
+  }
 
   if (kDebugMode) {
     print('ℹ️ Hive 초기화는 사용자 로그인 후 HomePage에서 수행됩니다.');
