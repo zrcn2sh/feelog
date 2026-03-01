@@ -14,6 +14,8 @@ import 'services/auth_service.dart';
 import 'services/ai_service.dart';
 import 'config/app_secret.dart';
 import 'config/app_theme.dart';
+import 'config/app_locale.dart';
+import 'config/app_version.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +23,9 @@ void main() async {
   if (kDebugMode) {
     print('🔍 플랫폼: ${kIsWeb ? "웹" : (Platform.isAndroid ? "안드로이드" : "iOS")}');
   }
+
+  // 앱 버전 로드 (pubspec.yaml의 version 사용)
+  await AppVersion.init();
 
   // Firebase 초기화
   await Firebase.initializeApp(
@@ -34,6 +39,10 @@ void main() async {
   final themePreference = await AppTheme.loadThemePreference();
   final appTheme = AppTheme(initialPreference: themePreference);
 
+  // 언어 설정 로드 (한국어 / English)
+  final localeCode = await AppLocale.loadLocaleCode();
+  final appLocale = AppLocale(initialCode: localeCode);
+
   // AdMob 초기화 (모바일만)
   if (!kIsWeb) {
     await MobileAds.instance.initialize();
@@ -45,7 +54,10 @@ void main() async {
 
   runApp(AppThemeScope(
     notifier: appTheme,
-    child: MyApp(theme: appTheme),
+    child: AppLocaleScope(
+      notifier: appLocale,
+      child: MyApp(theme: appTheme),
+    ),
   ));
 }
 
@@ -94,9 +106,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final appLocale = AppLocaleScope.of(context);
     return CupertinoApp(
       debugShowCheckedModeBanner: false,
       title: 'Feelog',
+      locale: appLocale.locale,
       theme: CupertinoThemeData(
         primaryColor: AppColors.primary,
         brightness: widget.theme.brightness,

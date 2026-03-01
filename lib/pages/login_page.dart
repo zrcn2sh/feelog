@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/auth_service.dart';
 import '../main.dart';
 import '../config/app_version.dart';
+import '../config/app_locale.dart';
+import '../config/login_strings.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -56,15 +58,16 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _showLoginError(String message) {
+    final s = LoginStrings.forLocale(AppLocaleScope.of(context).code);
     showCupertinoDialog(
       context: context,
-      builder: (BuildContext context) => CupertinoAlertDialog(
-        title: const Text('로그인 실패'),
+      builder: (BuildContext ctx) => CupertinoAlertDialog(
+        title: Text(s.loginFailed),
         content: Text(message),
         actions: [
           CupertinoDialogAction(
-            child: const Text('확인'),
-            onPressed: () => Navigator.pop(context),
+            child: Text(s.ok),
+            onPressed: () => Navigator.pop(ctx),
           ),
         ],
       ),
@@ -73,6 +76,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final s = LoginStrings.forLocale(AppLocaleScope.of(context).code);
     // 앱 테마 밝기 사용 (설정에서 다크 모드 선택 시 반영)
     final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
     final textColor = isDark ? CupertinoColors.white : CupertinoColors.label;
@@ -153,7 +157,7 @@ class _LoginPageState extends State<LoginPage> {
 
               // 부제목
               Text(
-                '당신의 감정을 기록하고 관리하세요',
+                s.subtitle,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.gaegu(
                   fontSize: 18,
@@ -185,7 +189,7 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             const SizedBox(width: 12),
                             Text(
-                              'Google로 계속하기',
+                              s.continueWithGoogle,
                               style: GoogleFonts.gaegu(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
@@ -217,7 +221,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        'Apple로 계속하기',
+                        s.continueWithApple,
                         style: GoogleFonts.gaegu(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
@@ -233,7 +237,7 @@ class _LoginPageState extends State<LoginPage> {
 
               // 약관 동의 텍스트
               Text(
-                '로그인하면 서비스 이용약관 및 개인정보처리방침에\n동의하는 것으로 간주됩니다.',
+                s.termsNotice,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.gaegu(
                   fontSize: 14,

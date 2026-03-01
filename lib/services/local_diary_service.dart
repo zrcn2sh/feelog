@@ -111,7 +111,9 @@ class LocalDiaryService {
         // 기존 Box가 손상되었을 수 있므로 삭제 후 재시도
         // Box가 실제로 손상되었는지 확인 (특정 오류만 재시도)
         final errorStr = e.toString().toLowerCase();
-        if (errorStr.contains('corrupt') || errorStr.contains('invalid') || errorStr.contains('lock')) {
+        if (errorStr.contains('corrupt') ||
+            errorStr.contains('invalid') ||
+            errorStr.contains('lock')) {
           print('⚠️ Box 손상 감지 (corrupt/invalid/lock), 삭제 후 재시도...');
           try {
             if (await Hive.boxExists(diaryBoxName)) {
@@ -247,7 +249,7 @@ class LocalDiaryService {
   static DiaryEntry? loadDiary(String dateStr) {
     print('═══════════════════════════════════════');
     print('📖 일기 로드 시작: $dateStr');
-    
+
     if (kIsWeb) {
       print('⚠️ 웹 환경 - null 반환');
       return null;
@@ -265,16 +267,17 @@ class LocalDiaryService {
 
     print('📦 Box에서 데이터 조회 중...');
     print('📊 Box의 총 키 개수: ${_diaryBox!.length}');
-    
+
     // 실제 키들을 확인 (타입 포함)
     final allRawKeys = _diaryBox!.keys.toList();
     print('📋 Box의 모든 키 (원본): $allRawKeys');
-    print('📋 Box의 모든 키 (String 변환): ${allRawKeys.map((k) => k.toString()).toList()}');
+    print(
+        '📋 Box의 모든 키 (String 변환): ${allRawKeys.map((k) => k.toString()).toList()}');
     print('🔍 찾고자 하는 키: "$dateStr" (타입: String)');
-    
+
     // 먼저 정확한 키로 조회
     var mapData = _diaryBox!.get(dateStr);
-    
+
     // 정확한 키로 찾지 못한 경우, 모든 키와 비교
     if (mapData == null) {
       print('⚠️ 정확한 키로 찾지 못함. 모든 키와 비교 중...');
@@ -303,7 +306,7 @@ class LocalDiaryService {
       // Hive에서 가져온 Map은 _Map<dynamic, dynamic> 타입일 수 있으므로 cast 사용
       final safeMap = (mapData).cast<String, dynamic>();
       print('✅ Map 변환 완료');
-      
+
       final entry = DiaryEntry.fromHiveMap(safeMap);
       print('✅ DiaryEntry 생성 완료');
       print('   - date: ${entry.date}');
@@ -342,7 +345,7 @@ class LocalDiaryService {
     print('   - kIsWeb: $kIsWeb');
     print('   - _initialized: $_initialized');
     print('   - _diaryBox: ${_diaryBox != null ? "존재" : "null"}');
-    
+
     if (kIsWeb || !_initialized || _diaryBox == null) {
       print('⚠️ 조건 불만족 - 빈 Set 반환');
       return {};
@@ -352,13 +355,14 @@ class LocalDiaryService {
     // 먼저 키 타입 확인 (cast 전에 원본 키 확인)
     final rawKeys = _diaryBox!.keys.toList();
     print('📦 Box의 모든 키 (원본): ${rawKeys.length}개');
-    print('   - 원본 키 타입: ${rawKeys.isNotEmpty ? rawKeys[0].runtimeType : "없음"}');
+    print(
+        '   - 원본 키 타입: ${rawKeys.isNotEmpty ? rawKeys[0].runtimeType : "없음"}');
     print('   - 원본 키 목록: $rawKeys');
-    
+
     final allKeys = rawKeys.map((k) => k.toString()).toList();
     print('📦 Box의 모든 키 (String 변환): ${allKeys.length}개');
     print('   - 키 목록: $allKeys');
-    
+
     final validKeys = <String>[];
     // rawKeys와 allKeys를 함께 순회 (원본 키로 데이터 조회, String 키로 반환)
     for (int i = 0; i < rawKeys.length; i++) {
@@ -379,7 +383,8 @@ class LocalDiaryService {
               print('⚠️ 키 "$keyStr"에 필수 필드가 없습니다: ${safeMap.keys}');
             }
           } catch (e) {
-            print('⚠️ 키 "$keyStr"의 데이터가 Map이 아니거나 변환 실패: $e (타입: ${mapData.runtimeType})');
+            print(
+                '⚠️ 키 "$keyStr"의 데이터가 Map이 아니거나 변환 실패: $e (타입: ${mapData.runtimeType})');
           }
         } else {
           print('⚠️ 키 "$keyStr"의 데이터가 null입니다');
@@ -388,7 +393,7 @@ class LocalDiaryService {
         print('⚠️ 키 "$keyStr" 처리 중 오류: $e');
       }
     }
-    
+
     final result = validKeys.toSet();
     print('✅ 유효한 날짜 목록 반환: ${result.length}개 (전체 ${allKeys.length}개 중)');
     print('   - 유효한 날짜들: ${result.toList()..sort()}');
@@ -440,7 +445,7 @@ class LocalDiaryService {
     print('   - kIsWeb: $kIsWeb');
     print('   - _initialized: $_initialized');
     print('   - _diaryBox: ${_diaryBox != null ? "존재" : "null"}');
-    
+
     if (kIsWeb || !_initialized || _diaryBox == null) {
       print('⚠️ 조건 불만족 - 빈 리스트 반환');
       return [];
@@ -449,31 +454,34 @@ class LocalDiaryService {
     final entries = <DiaryEntry>[];
     final allKeys = _diaryBox!.keys.toList();
     print('📦 Box의 총 키 개수: ${allKeys.length}');
-    
+
     for (final key in allKeys) {
       try {
         final mapData = _diaryBox!.get(key);
         if (mapData != null) {
           final safeMap = (mapData).cast<String, dynamic>();
           final entry = DiaryEntry.fromHiveMap(safeMap);
-          
+
           // 날짜 범위 확인 (경계값 포함)
           // 날짜 부분만 비교 (시간 제거)
-          final entryDateOnly = DateTime(entry.date.year, entry.date.month, entry.date.day);
-          final startDateOnly = DateTime(startDate.year, startDate.month, startDate.day);
-          final endDateOnly = DateTime(endDate.year, endDate.month, endDate.day);
-          
+          final entryDateOnly =
+              DateTime(entry.date.year, entry.date.month, entry.date.day);
+          final startDateOnly =
+              DateTime(startDate.year, startDate.month, startDate.day);
+          final endDateOnly =
+              DateTime(endDate.year, endDate.month, endDate.day);
+
           // startDate <= entryDate <= endDate
-          final isAfterOrEqual = entryDateOnly.isAfter(startDateOnly) || 
-              (entryDateOnly.year == startDateOnly.year && 
-               entryDateOnly.month == startDateOnly.month && 
-               entryDateOnly.day == startDateOnly.day);
-          final isBeforeOrEqual = entryDateOnly.isBefore(endDateOnly) || 
-              (entryDateOnly.year == endDateOnly.year && 
-               entryDateOnly.month == endDateOnly.month && 
-               entryDateOnly.day == endDateOnly.day);
+          final isAfterOrEqual = entryDateOnly.isAfter(startDateOnly) ||
+              (entryDateOnly.year == startDateOnly.year &&
+                  entryDateOnly.month == startDateOnly.month &&
+                  entryDateOnly.day == startDateOnly.day);
+          final isBeforeOrEqual = entryDateOnly.isBefore(endDateOnly) ||
+              (entryDateOnly.year == endDateOnly.year &&
+                  entryDateOnly.month == endDateOnly.month &&
+                  entryDateOnly.day == endDateOnly.day);
           final isInRange = isAfterOrEqual && isBeforeOrEqual;
-          
+
           if (isInRange) {
             entries.add(entry);
             print('   ✅ 포함: ${entry.date} (키: $key)');
@@ -486,7 +494,7 @@ class LocalDiaryService {
         print('스택 트레이스: $stackTrace');
       }
     }
-    
+
     entries.sort((a, b) => a.date.compareTo(b.date));
     print('✅ 기간별 일기 조회 완료: ${entries.length}개');
     print('═══════════════════════════════════════');
@@ -534,7 +542,7 @@ class LocalDiaryService {
     print('   - kIsWeb: $kIsWeb');
     print('   - _initialized: $_initialized');
     print('   - _analysisBox: ${_analysisBox != null ? "존재" : "null"}');
-    
+
     if (kIsWeb || !_initialized || _analysisBox == null) {
       print('⚠️ 조건 불만족 - null 반환');
       return null;
@@ -546,7 +554,7 @@ class LocalDiaryService {
         print('⚠️ 분석 결과 없음: $periodKey');
         return null;
       }
-      
+
       // _Map<dynamic, dynamic> 타입 처리
       if (data is Map) {
         final result = data.cast<String, dynamic>();
@@ -582,7 +590,12 @@ class LocalDiaryService {
   /// (폰 바꿀 때 등 데이터 옮기기용)
   static Map<String, dynamic> exportAllData() {
     if (kIsWeb || !_initialized || _diaryBox == null) {
-      return {'diaries': {}, 'periodAnalysis': {}, 'version': 1, 'exportedAt': DateTime.now().toIso8601String()};
+      return {
+        'diaries': {},
+        'periodAnalysis': {},
+        'version': 1,
+        'exportedAt': DateTime.now().toIso8601String()
+      };
     }
     final diaries = <String, dynamic>{};
     for (final key in _diaryBox!.keys) {
@@ -623,7 +636,9 @@ class LocalDiaryService {
         final key = entry.key.toString();
         final value = entry.value;
         if (value is Map) {
-          final safeMap = value is Map<String, dynamic> ? value : value.cast<String, dynamic>();
+          final safeMap = value is Map<String, dynamic>
+              ? value
+              : value.cast<String, dynamic>();
           await _diaryBox!.put(key, safeMap);
         }
       }
@@ -635,7 +650,9 @@ class LocalDiaryService {
         final key = entry.key.toString();
         final value = entry.value;
         if (value is Map) {
-          final safeMap = value is Map<String, dynamic> ? value : value.cast<String, dynamic>();
+          final safeMap = value is Map<String, dynamic>
+              ? value
+              : value.cast<String, dynamic>();
           await _analysisBox!.put(key, safeMap);
         }
       }

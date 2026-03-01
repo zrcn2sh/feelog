@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Material, Colors, Color;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/app_locale.dart';
+import '../config/onboarding_strings.dart';
 import '../main.dart';
 
 /// 첫 로그인 시 한 번만 보여주는 설명 모달.
@@ -82,8 +84,15 @@ class OnboardingModal extends StatelessWidget {
     // 모달이 열릴 때 키보드가 남아 있으면 '시작하기'가 가려지므로 한 번 더 내림
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusManager.instance.primaryFocus?.unfocus();
-      FocusScope.of(context).unfocus();
+      if (context.mounted) FocusScope.of(context).unfocus();
     });
+    final size = MediaQuery.sizeOf(context);
+    final maxWidth = size.width - 48; // 좌우 24 패딩
+    final appLocale = AppLocaleScope.of(context);
+    final s = OnboardingStrings.forLocale(appLocale.code);
+    final labelColor = CupertinoColors.label.resolveFrom(context);
+    final secondaryColor = CupertinoColors.secondaryLabel.resolveFrom(context);
+
     return Material(
       color: Colors.transparent,
       child: Center(
@@ -91,117 +100,142 @@ class OnboardingModal extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.75,
+              maxWidth: maxWidth,
+              maxHeight: size.height * 0.75,
             ),
-            child: Container(
-              decoration: BoxDecoration(
-                color: _modalBackgroundColor(context),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: CupertinoColors.black.withOpacity(0.15),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.all(24),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 8),
-                    const Icon(
-                      CupertinoIcons.heart_fill,
-                      size: 48,
-                      color: AppColors.primary,
+            child: SizedBox(
+              width: double.infinity,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _modalBackgroundColor(context),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: CupertinoColors.black.withOpacity(0.15),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Feelog에 오신 것을 환영해요',
-                      style: GoogleFonts.gaegu(
-                        fontSize: 23,
-                        fontWeight: FontWeight.bold,
-                        color: CupertinoColors.label.resolveFrom(context),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      '이 앱에서는 오늘 하루의 일기를 작성하고,\nAI가 감정을 분석해 드려요.\n달력에서 날짜를 선택해 일기를 쓰고 저장해 보세요.',
-                      style: GoogleFonts.gaegu(
-                        fontSize: 17,
-                        height: 1.4,
-                        color: CupertinoColors.secondaryLabel.resolveFrom(context),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildChipRow(
-                      context,
-                      '6M',
-                      '최근 6개월 감정 요약을 한눈에 볼 수 있어요.',
-                    ),
-                    _buildChipRow(
-                      context,
-                      '1Y',
-                      '최근 1년 감정 요약을 볼 수 있어요.',
-                    ),
-                    _buildChipRow(
-                      context,
-                      'SD',
-                      '같은 일자의 과거 일기(추억)를 볼 수 있어요.',
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: CupertinoColors.systemGrey5.resolveFrom(context),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  ],
+                ),
+                padding: const EdgeInsets.all(24),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          Text(
-                            '※ 일기 데이터 안내',
-                            style: GoogleFonts.gaegu(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: CupertinoColors.label.resolveFrom(context),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            '· 일기 데이터는 이 기기(휴대폰)에만 저장\n'
-                            '· 앱·데이터 삭제 시에 저장된 일기는 복구 불가',
-                            style: GoogleFonts.gaegu(
-                              fontSize: 14,
-                              height: 1.45,
-                              color: CupertinoColors.secondaryLabel.resolveFrom(context),
-                            ),
+                          CupertinoSlidingSegmentedControl<AppLocaleCode>(
+                            groupValue: appLocale.code,
+                            thumbColor: CupertinoColors.tertiarySystemFill
+                                .resolveFrom(context),
+                            children: {
+                              AppLocaleCode.ko: _segmentPaddingSmall(
+                                Text(
+                                  'KOR',
+                                  style: GoogleFonts.gaegu(
+                                    fontSize: 11,
+                                    color: labelColor,
+                                  ),
+                                ),
+                              ),
+                              AppLocaleCode.en: _segmentPaddingSmall(
+                                Text(
+                                  'ENG',
+                                  style: GoogleFonts.gaegu(
+                                    fontSize: 11,
+                                    color: labelColor,
+                                  ),
+                                ),
+                              ),
+                            },
+                            onValueChanged: (v) {
+                              if (v != null) appLocale.setLocaleCode(v);
+                            },
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: CupertinoButton(
+                      const SizedBox(height: 8),
+                      const Icon(
+                        CupertinoIcons.heart_fill,
+                        size: 48,
                         color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(12),
-                        onPressed: () => onComplete(),
-                        child: Text(
-                          '시작하기',
-                          style: GoogleFonts.gaegu(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: CupertinoColors.white,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        s.welcomeTitle,
+                        style: GoogleFonts.gaegu(
+                          fontSize: 23,
+                          fontWeight: FontWeight.bold,
+                          color: labelColor,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        s.welcomeDesc,
+                        style: GoogleFonts.gaegu(
+                          fontSize: 17,
+                          height: 1.4,
+                          color: secondaryColor,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildChipRow(context, '6M', s.chip6mDesc),
+                      _buildChipRow(context, '1Y', s.chip1yDesc),
+                      _buildChipRow(context, 'SD', s.chipSdDesc),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color:
+                              CupertinoColors.systemGrey5.resolveFrom(context),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              s.dataNoticeTitle,
+                              style: GoogleFonts.gaegu(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: labelColor,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              s.dataNoticeBody,
+                              style: GoogleFonts.gaegu(
+                                fontSize: 14,
+                                height: 1.45,
+                                color: secondaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: CupertinoButton(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(12),
+                          onPressed: () => onComplete(),
+                          child: Text(
+                            s.startButton,
+                            style: GoogleFonts.gaegu(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: CupertinoColors.white,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -210,4 +244,11 @@ class OnboardingModal extends StatelessWidget {
       ),
     );
   }
+}
+
+Padding _segmentPaddingSmall(Widget child) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 6),
+    child: child,
+  );
 }

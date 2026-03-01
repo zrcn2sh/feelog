@@ -68,6 +68,9 @@ dependencies:
   # Google Fonts for Nunito (8.x: FontWeight const map 호환)
   google_fonts: ^8.0.0
 
+  # 앱 버전 정보 (pubspec.yaml version 노출)
+  package_info_plus: ^8.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

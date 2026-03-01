@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -10,6 +11,8 @@ import '../services/local_diary_service.dart';
 import '../models/diary_entry.dart';
 import '../widgets/onboarding_modal.dart';
 import '../widgets/analyzing_ad_dialog_stub.dart' if (dart.library.io) '../widgets/analyzing_ad_dialog.dart' as analyzing_dialog;
+import '../config/app_locale.dart';
+import '../config/home_strings.dart';
 import '../main.dart';
 import 'settings_page.dart';
 
@@ -42,6 +45,12 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _initializeApp();
+    // 모바일: 저장 모달용 배너 미리 로드 (저장 버튼 탭 시 즉시 표시)
+    if (!kIsWeb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        analyzing_dialog.PreloadedBannerHolder.preload();
+      });
+    }
 
     // 키보드 포커스 리스너
     _diaryFocusNode.addListener(() {
@@ -363,11 +372,11 @@ class _HomePageState extends State<HomePage> {
         showCupertinoDialog(
           context: context,
           builder: (BuildContext context) => CupertinoAlertDialog(
-            title: const Text('로그아웃 실패'),
+            title: Text(HomeStrings.forLocale(AppLocaleScope.of(context).code).logoutFailed),
             content: Text('$e'),
             actions: [
               CupertinoDialogAction(
-                child: const Text('확인'),
+                child: Text(HomeStrings.forLocale(AppLocaleScope.of(context).code).ok),
                 onPressed: () => Navigator.pop(context),
               ),
             ],
@@ -381,6 +390,7 @@ class _HomePageState extends State<HomePage> {
     showCupertinoModalPopup(
       context: context,
       builder: (BuildContext context) {
+        final s = HomeStrings.forLocale(AppLocaleScope.of(context).code);
         final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
         final titleColor = isDark ? CupertinoColors.white : CupertinoColors.label.resolveFrom(context);
         final nameColor = isDark ? CupertinoColors.white : CupertinoColors.label.resolveFrom(context);
@@ -398,7 +408,7 @@ class _HomePageState extends State<HomePage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  '사용자 정보',
+                  s.userInfo,
                   style: GoogleFonts.gaegu(
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
@@ -438,7 +448,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _userInfo['name'] ?? '사용자',
+                  _userInfo['name'] ?? s.user,
                   style: GoogleFonts.gaegu(
                     fontSize: 21,
                     fontWeight: FontWeight.w600,
@@ -475,7 +485,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            '총 ${_diaryDates.length}개의 일기',
+                            s.diaryCount(_diaryDates.length),
                             style: GoogleFonts.gaegu(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
@@ -519,7 +529,7 @@ class _HomePageState extends State<HomePage> {
                           _signOut();
                         },
                         child: Text(
-                          '나가기',
+                          s.exit,
                           style: GoogleFonts.gaegu(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
@@ -537,7 +547,7 @@ class _HomePageState extends State<HomePage> {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         onPressed: () => Navigator.pop(context),
                         child: Text(
-                          '닫기',
+                          s.close,
                           style: GoogleFonts.gaegu(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
@@ -559,18 +569,19 @@ class _HomePageState extends State<HomePage> {
 
   /// 탈퇴 확인 후 계정 삭제
   Future<void> _showWithdrawConfirm() async {
+    final s = HomeStrings.forLocale(AppLocaleScope.of(context).code);
     final confirmed = await showCupertinoDialog<bool>(
       context: context,
       builder: (BuildContext context) => CupertinoAlertDialog(
         title: Text(
-          '계정 탈퇴',
+          s.withdrawConfirmTitle,
           style: GoogleFonts.gaegu(
             fontSize: 20,
             fontWeight: FontWeight.w600,
           ),
         ),
         content: Text(
-          '정말 탈퇴하시겠습니까?\n모든 일기 데이터가 삭제되며 복구할 수 없습니다.',
+          s.withdrawConfirmMessage,
           style: GoogleFonts.gaegu(fontSize: 18),
         ),
         actions: [
@@ -578,7 +589,7 @@ class _HomePageState extends State<HomePage> {
             isDefaultAction: true,
             onPressed: () => Navigator.pop(context, false),
             child: Text(
-              '취소',
+              s.cancel,
               style: GoogleFonts.gaegu(fontSize: 18),
             ),
           ),
@@ -586,7 +597,7 @@ class _HomePageState extends State<HomePage> {
             isDestructiveAction: true,
             onPressed: () => Navigator.pop(context, true),
             child: Text(
-              '탈퇴',
+              s.withdraw,
               style: GoogleFonts.gaegu(fontSize: 18),
             ),
           ),
@@ -606,11 +617,11 @@ class _HomePageState extends State<HomePage> {
         showCupertinoDialog(
           context: context,
           builder: (BuildContext context) => CupertinoAlertDialog(
-            title: const Text('탈퇴 실패'),
+            title: Text(HomeStrings.forLocale(AppLocaleScope.of(context).code).withdrawFailed),
             content: Text('$e'),
             actions: [
               CupertinoDialogAction(
-                child: const Text('확인'),
+                child: Text(HomeStrings.forLocale(AppLocaleScope.of(context).code).ok),
                 onPressed: () => Navigator.pop(context),
               ),
             ],
@@ -622,26 +633,27 @@ class _HomePageState extends State<HomePage> {
 
   // Hive 데이터 확인 및 표시
   void _showHiveDataDebug() {
+    final s = HomeStrings.forLocale(AppLocaleScope.of(context).code);
     if (kIsWeb) {
       showCupertinoDialog(
         context: context,
         builder: (BuildContext context) => CupertinoAlertDialog(
           title: Text(
-            '알림',
+            s.alert,
             style: GoogleFonts.gaegu(
               fontSize: 20,
               fontWeight: FontWeight.w600,
             ),
           ),
           content: Text(
-            '웹에서는 Hive를 사용하지 않습니다.',
+            s.webHiveNotice,
             style: GoogleFonts.gaegu(
               fontSize: 18,
             ),
           ),
           actions: [
             CupertinoDialogAction(
-              child: const Text('확인'),
+              child: Text(s.ok),
               onPressed: () => Navigator.pop(context),
             ),
           ],
@@ -689,7 +701,7 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '총 일기 수: ${dates.length}개',
+                s.debugTotalCount(dates.length),
                 style: GoogleFonts.gaegu(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -698,7 +710,7 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 12),
               if (dates.isNotEmpty) ...[
                 Text(
-                  '일기 날짜 목록:',
+                  s.debugDiaryListTitle,
                   style: GoogleFonts.gaegu(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -712,7 +724,7 @@ class _HomePageState extends State<HomePage> {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Text(
-                        '• $date (${entry?.content.length ?? 0}자)',
+                        s.diaryEntryLine(date, entry?.content.length ?? 0),
                         style: GoogleFonts.gaegu(
                           fontSize: 15,
                           color: CupertinoColors.secondaryLabel,
@@ -723,7 +735,7 @@ class _HomePageState extends State<HomePage> {
                 }(),
                 if (dates.length > 10)
                   Text(
-                    '... 외 ${dates.length - 10}개',
+                    s.andMore(dates.length - 10),
                     style: GoogleFonts.gaegu(
                       fontSize: 15,
                       color: CupertinoColors.secondaryLabel,
@@ -731,7 +743,7 @@ class _HomePageState extends State<HomePage> {
                   ),
               ] else
                 Text(
-                  '저장된 일기가 없습니다.',
+                  s.noDiarySaved,
                   style: GoogleFonts.gaegu(
                     fontSize: 16,
                     color: CupertinoColors.secondaryLabel,
@@ -739,7 +751,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               const SizedBox(height: 12),
               Text(
-                '※ 상세 정보는 콘솔 로그를 확인하세요.',
+                s.checkConsole,
                 style: GoogleFonts.gaegu(
                   fontSize: 13,
                   color: CupertinoColors.placeholderText,
@@ -750,7 +762,7 @@ class _HomePageState extends State<HomePage> {
         ),
         actions: [
           CupertinoDialogAction(
-            child: const Text('확인'),
+            child: Text(s.ok),
             onPressed: () => Navigator.pop(context),
           ),
         ],
@@ -861,6 +873,7 @@ class _HomePageState extends State<HomePage> {
     showCupertinoModalPopup(
       context: context,
       builder: (BuildContext popupContext) {
+        final s = HomeStrings.forLocale(AppLocaleScope.of(popupContext).code);
         final isDark = CupertinoTheme.brightnessOf(popupContext) == Brightness.dark;
         final chartBgColor = isDark ? const Color(0xFF2C2C2E) : CupertinoColors.systemGrey6.resolveFrom(popupContext);
         final monthLabelColor = isDark ? CupertinoColors.white : CupertinoColors.secondaryLabel.resolveFrom(popupContext);
@@ -868,7 +881,7 @@ class _HomePageState extends State<HomePage> {
         return CupertinoPageScaffold(
           navigationBar: CupertinoNavigationBar(
             middle: Text(
-              '${DateTime.now().year}년 월별 일기 작성 수',
+              s.monthlyDiaryChartTitle(DateTime.now().year),
               style: GoogleFonts.gaegu(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -942,9 +955,9 @@ class _HomePageState extends State<HomePage> {
                                       : null,
                                 ),
                                 const SizedBox(height: 8),
-                                // 월 레이블
+                                // 월 레이블 (약자로 오버플로우 방지)
                                 Text(
-                                  '$month월',
+                                  s.formatMonthShort(month),
                                   style: GoogleFonts.gaegu(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
@@ -977,7 +990,7 @@ class _HomePageState extends State<HomePage> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              '총 $totalCount개의 일기',
+                              s.diaryCount(totalCount),
                               style: GoogleFonts.gaegu(
                                 fontSize: 19,
                                 fontWeight: FontWeight.w600,
@@ -1003,7 +1016,7 @@ class _HomePageState extends State<HomePage> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              '${DateTime.now().year}년에 작성한 일기가 없습니다.',
+                              s.noDiaryInYear(DateTime.now().year),
                               style: GoogleFonts.gaegu(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w500,
@@ -1024,8 +1037,30 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final appLocale = AppLocaleScope.of(context);
+    final s = HomeStrings.forLocale(appLocale.code);
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
+        leading: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () {
+            showGeneralDialog(
+              context: context,
+              barrierDismissible: true,
+              barrierLabel: s.close,
+              barrierColor: Colors.black54,
+              transitionDuration: const Duration(milliseconds: 200),
+              pageBuilder: (ctx, _, __) => OnboardingModal(
+                onComplete: () => Navigator.of(ctx).pop(),
+              ),
+            );
+          },
+          child: const Icon(
+            CupertinoIcons.question_circle,
+            color: AppColors.primary,
+            size: 26,
+          ),
+        ),
         middle: Text(
           'Feelog',
           style: GoogleFonts.gaegu(
@@ -1163,7 +1198,7 @@ class _HomePageState extends State<HomePage> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  _formatDate(_selectedDate),
+                                  _formatDate(_selectedDate, s),
                                   style: GoogleFonts.gaegu(
                                     fontSize: 19,
                                     fontWeight: FontWeight.w600,
@@ -1223,7 +1258,7 @@ class _HomePageState extends State<HomePage> {
                                   width: 0.5,
                                 ),
                               ),
-                              child: _buildCalendar(),
+                              child: _buildCalendar(s),
                             )
                           : const SizedBox.shrink(),
                     ),
@@ -1235,7 +1270,7 @@ class _HomePageState extends State<HomePage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '오늘의 일기',
+                          s.todayDiary,
                           style: GoogleFonts.gaegu(
                             fontSize: 25,
                             fontWeight: FontWeight.w700,
@@ -1347,7 +1382,7 @@ class _HomePageState extends State<HomePage> {
                               maxLines: null,
                               enabled: !_hasExistingDiary ||
                                   _isEditingMode, // 일기가 없거나 수정 모드면 활성화
-                              placeholder: '일기를 입력하세요',
+                              placeholder: s.diaryPlaceholder,
                               placeholderStyle: GoogleFonts.gaegu(
                                 fontSize: 19,
                                 color: CupertinoColors.tertiaryLabel,
@@ -1406,7 +1441,7 @@ class _HomePageState extends State<HomePage> {
                               ? const CupertinoActivityIndicator(
                                   color: CupertinoColors.white)
                               : Text(
-                                  '저장하기',
+                                  s.save,
                                   style: GoogleFonts.gaegu(
                                     fontSize: 20,
                                     fontWeight: FontWeight.w600,
@@ -1431,7 +1466,7 @@ class _HomePageState extends State<HomePage> {
                                   ? const CupertinoActivityIndicator(
                                       color: CupertinoColors.white)
                                   : Text(
-                                      _isEditingMode ? '저장하기' : '수정하기',
+                                      _isEditingMode ? s.save : s.edit,
                                       style: GoogleFonts.gaegu(
                                         fontSize: 20,
                                         fontWeight: FontWeight.w600,
@@ -1479,11 +1514,13 @@ class _HomePageState extends State<HomePage> {
     final dateStr =
         '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
 
+    final languageCode = AppLocaleScope.of(context).code.code;
     setState(() {
       _isAnalyzing = true;
     });
 
-    final moodAnalysis = await _aiService.analyzeDiary(_diaryController.text);
+    final moodAnalysis = await _aiService.analyzeDiary(_diaryController.text,
+        languageCode: languageCode);
 
     setState(() {
       _isAnalyzing = false;
@@ -1546,26 +1583,27 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _saveDiary() async {
+    final s = HomeStrings.forLocale(AppLocaleScope.of(context).code);
     if (_diaryController.text.trim().isEmpty) {
       showCupertinoDialog(
         context: context,
         builder: (BuildContext context) => CupertinoAlertDialog(
           title: Text(
-            '알림',
+            s.alert,
             style: GoogleFonts.gaegu(
               fontSize: 20,
               fontWeight: FontWeight.w600,
             ),
           ),
           content: Text(
-            '일기를 입력해주세요.',
+            s.enterDiaryPrompt,
             style: GoogleFonts.gaegu(
               fontSize: 18,
             ),
           ),
           actions: [
             CupertinoDialogAction(
-              child: const Text('확인'),
+              child: Text(s.ok),
               onPressed: () => Navigator.pop(context),
             ),
           ],
@@ -1575,8 +1613,11 @@ class _HomePageState extends State<HomePage> {
     }
 
     try {
-      // 모바일: "일기 분석 중" 모달 + AdMob 배너 표시 (3초). Cupertino 모달 사용으로 MaterialLocalizations 불필요.
+      // 모바일: "일기 분석 중" 모달 + AdMob 배너. 광고 표시(또는 로드 완료/실패) 후 3초 뒤에 닫힘.
+      Completer<void>? adDisplayedCompleter;
       if (!kIsWeb) {
+        final completer = Completer<void>();
+        adDisplayedCompleter = completer;
         showCupertinoModalPopup<void>(
           context: context,
           builder: (ctx) => Stack(
@@ -1589,19 +1630,31 @@ class _HomePageState extends State<HomePage> {
                   color: CupertinoColors.black.withOpacity(0.4),
                 ),
               ),
-              const analyzing_dialog.AnalyzingAdDialog(),
+              analyzing_dialog.AnalyzingAdDialog(
+                onAdDisplayed: () {
+                  if (!completer.isCompleted) completer.complete();
+                },
+                preloadedAd: analyzing_dialog.PreloadedBannerHolder.ad,
+                preloadedAdReady: analyzing_dialog.PreloadedBannerHolder.isReady,
+                preloadedReadyNotifier:
+                    analyzing_dialog.PreloadedBannerHolder.readyNotifier,
+              ),
             ],
           ),
         );
       }
 
-      await Future.wait([
-        Future.delayed(const Duration(seconds: 3)),
-        _performSaveDiaryWork(),
-      ]);
+      final saveFuture = _performSaveDiaryWork();
+      final closeAfterAdFuture = adDisplayedCompleter != null
+          ? adDisplayedCompleter.future
+              .timeout(const Duration(seconds: 10), onTimeout: () {})
+              .then((_) => Future.delayed(const Duration(seconds: 3)))
+          : Future<void>.value();
+      await Future.wait([saveFuture, closeAfterAdFuture]);
 
       if (!kIsWeb && mounted) {
         Navigator.of(context).pop(); // 분석 모달 닫기
+        analyzing_dialog.PreloadedBannerHolder.releaseAndPreloadNext();
       }
 
       if (mounted) {
@@ -1609,14 +1662,14 @@ class _HomePageState extends State<HomePage> {
           context: context,
           builder: (BuildContext context) => CupertinoAlertDialog(
             title: Text(
-              '저장 완료',
+              s.saveSuccess,
               style: GoogleFonts.gaegu(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
-              '일기가 저장되었습니다.',
+              s.diarySaved,
               style: GoogleFonts.gaegu(
                 fontSize: 18,
               ),
@@ -1624,7 +1677,7 @@ class _HomePageState extends State<HomePage> {
             actions: [
               CupertinoDialogAction(
                 child: Text(
-                  '확인',
+                  s.ok,
                   style: GoogleFonts.gaegu(
                     fontSize: 18,
                   ),
@@ -1647,14 +1700,14 @@ class _HomePageState extends State<HomePage> {
           context: context,
           builder: (BuildContext context) => CupertinoAlertDialog(
             title: Text(
-              '저장 실패',
+              s.saveFailed,
               style: GoogleFonts.gaegu(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
-              '일기 저장 중 오류가 발생했습니다.\n$e',
+              '${s.saveErrorMessage}\n$e',
               style: GoogleFonts.gaegu(
                 fontSize: 18,
               ),
@@ -1662,7 +1715,7 @@ class _HomePageState extends State<HomePage> {
             actions: [
               CupertinoDialogAction(
                 child: Text(
-                  '확인',
+                  s.ok,
                   style: GoogleFonts.gaegu(
                     fontSize: 18,
                   ),
@@ -1680,6 +1733,10 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _isEditingMode = true;
     });
+    // 수정 모드 진입 후 입력창으로 포커스
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _diaryFocusNode.requestFocus();
+    });
   }
 
   Future<void> _saveUpdatedDiary() async {
@@ -1687,18 +1744,21 @@ class _HomePageState extends State<HomePage> {
     if (user == null) {
       throw Exception('로그인이 필요합니다.');
     }
+    final s = HomeStrings.forLocale(AppLocaleScope.of(context).code);
 
     // 날짜를 문자열로 변환 (YYYY-MM-DD 형식)
     final dateStr =
         '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
 
     try {
+      final languageCode = AppLocaleScope.of(context).code.code;
       // AI 감정 분석 실행
       setState(() {
         _isAnalyzing = true;
       });
 
-      final moodAnalysis = await _aiService.analyzeDiary(_diaryController.text);
+      final moodAnalysis = await _aiService.analyzeDiary(_diaryController.text,
+          languageCode: languageCode);
 
       setState(() {
         _isAnalyzing = false;
@@ -1764,14 +1824,14 @@ class _HomePageState extends State<HomePage> {
           context: context,
           builder: (BuildContext context) => CupertinoAlertDialog(
             title: Text(
-              '수정 완료',
+              s.editSuccess,
               style: GoogleFonts.gaegu(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
-              '일기가 수정되었습니다.',
+              s.diaryUpdated,
               style: GoogleFonts.gaegu(
                 fontSize: 18,
               ),
@@ -1779,7 +1839,7 @@ class _HomePageState extends State<HomePage> {
             actions: [
               CupertinoDialogAction(
                 child: Text(
-                  '확인',
+                  s.ok,
                   style: GoogleFonts.gaegu(
                     fontSize: 18,
                   ),
@@ -1804,14 +1864,14 @@ class _HomePageState extends State<HomePage> {
           context: context,
           builder: (BuildContext context) => CupertinoAlertDialog(
             title: Text(
-              '수정 실패',
+              s.editFailed,
               style: GoogleFonts.gaegu(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
-              '일기 수정 중 오류가 발생했습니다.\n$e',
+              '${s.editErrorMessage}\n$e',
               style: GoogleFonts.gaegu(
                 fontSize: 18,
               ),
@@ -1819,7 +1879,7 @@ class _HomePageState extends State<HomePage> {
             actions: [
               CupertinoDialogAction(
                 child: Text(
-                  '확인',
+                  s.ok,
                   style: GoogleFonts.gaegu(
                     fontSize: 18,
                   ),
@@ -1838,18 +1898,21 @@ class _HomePageState extends State<HomePage> {
     if (user == null) {
       throw Exception('로그인이 필요합니다.');
     }
+    final s = HomeStrings.forLocale(AppLocaleScope.of(context).code);
 
     // 날짜를 문자열로 변환 (YYYY-MM-DD 형식)
     final dateStr =
         '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
 
     try {
+      final languageCode = AppLocaleScope.of(context).code.code;
       // AI 감정 분석 실행
       setState(() {
         _isAnalyzing = true;
       });
 
-      final moodAnalysis = await _aiService.analyzeDiary(_diaryController.text);
+      final moodAnalysis = await _aiService.analyzeDiary(_diaryController.text,
+          languageCode: languageCode);
 
       setState(() {
         _isAnalyzing = false;
@@ -1896,14 +1959,14 @@ class _HomePageState extends State<HomePage> {
           context: context,
           builder: (BuildContext context) => CupertinoAlertDialog(
             title: Text(
-              '수정 완료',
+              s.editSuccess,
               style: GoogleFonts.gaegu(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
-              '일기가 수정되었습니다.',
+              s.diaryUpdated,
               style: GoogleFonts.gaegu(
                 fontSize: 18,
               ),
@@ -1911,7 +1974,7 @@ class _HomePageState extends State<HomePage> {
             actions: [
               CupertinoDialogAction(
                 child: Text(
-                  '확인',
+                  s.ok,
                   style: GoogleFonts.gaegu(
                     fontSize: 18,
                   ),
@@ -1932,14 +1995,14 @@ class _HomePageState extends State<HomePage> {
           context: context,
           builder: (BuildContext context) => CupertinoAlertDialog(
             title: Text(
-              '수정 실패',
+              s.editFailed,
               style: GoogleFonts.gaegu(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
-              '일기 수정 중 오류가 발생했습니다.\n$e',
+              '${s.editErrorMessage}\n$e',
               style: GoogleFonts.gaegu(
                 fontSize: 18,
               ),
@@ -1947,7 +2010,7 @@ class _HomePageState extends State<HomePage> {
             actions: [
               CupertinoDialogAction(
                 child: Text(
-                  '확인',
+                  s.ok,
                   style: GoogleFonts.gaegu(
                     fontSize: 18,
                   ),
@@ -1964,20 +2027,21 @@ class _HomePageState extends State<HomePage> {
   Future<void> _deleteDiary() async {
     final user = _authService.getCurrentUser();
     if (user == null) return;
+    final s = HomeStrings.forLocale(AppLocaleScope.of(context).code);
 
     // 삭제 확인 다이얼로그
     final confirmed = await showCupertinoDialog(
       context: context,
       builder: (BuildContext context) => CupertinoAlertDialog(
         title: Text(
-          '일기 삭제',
+          s.deleteDiaryTitle,
           style: GoogleFonts.gaegu(
             fontSize: 20,
             fontWeight: FontWeight.w600,
           ),
         ),
         content: Text(
-          '정말 이 일기를 삭제하시겠습니까?',
+          s.deleteDiaryConfirm,
           style: GoogleFonts.gaegu(
             fontSize: 18,
           ),
@@ -1986,7 +2050,7 @@ class _HomePageState extends State<HomePage> {
           CupertinoDialogAction(
             isDestructiveAction: true,
             child: Text(
-              '취소',
+              s.cancel,
               style: GoogleFonts.gaegu(
                 fontSize: 18,
                 color: CupertinoColors.destructiveRed,
@@ -1996,7 +2060,7 @@ class _HomePageState extends State<HomePage> {
           ),
           CupertinoDialogAction(
             child: Text(
-              '삭제',
+              s.delete,
               style: GoogleFonts.gaegu(
                 fontSize: 18,
                 color: AppColors.primary,
@@ -2037,14 +2101,14 @@ class _HomePageState extends State<HomePage> {
           context: context,
           builder: (BuildContext context) => CupertinoAlertDialog(
             title: Text(
-              '삭제 완료',
+              s.deleteSuccess,
               style: GoogleFonts.gaegu(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
-              '일기가 삭제되었습니다.',
+              s.diaryDeleted,
               style: GoogleFonts.gaegu(
                 fontSize: 18,
               ),
@@ -2052,7 +2116,7 @@ class _HomePageState extends State<HomePage> {
             actions: [
               CupertinoDialogAction(
                 child: Text(
-                  '확인',
+                  s.ok,
                   style: GoogleFonts.gaegu(
                     fontSize: 18,
                   ),
@@ -2080,14 +2144,14 @@ class _HomePageState extends State<HomePage> {
           context: context,
           builder: (BuildContext context) => CupertinoAlertDialog(
             title: Text(
-              '삭제 실패',
+              s.deleteFailed,
               style: GoogleFonts.gaegu(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
-              '일기 삭제 중 오류가 발생했습니다.\n$e',
+              '${s.deleteErrorMessage}\n$e',
               style: GoogleFonts.gaegu(
                 fontSize: 18,
               ),
@@ -2095,7 +2159,7 @@ class _HomePageState extends State<HomePage> {
             actions: [
               CupertinoDialogAction(
                 child: Text(
-                  '확인',
+                  s.ok,
                   style: GoogleFonts.gaegu(
                     fontSize: 18,
                   ),
@@ -2109,7 +2173,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Widget _buildCalendar() {
+  Widget _buildCalendar(HomeStrings s) {
     final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
     final calendarLabelColor = isDark
         ? CupertinoColors.white
@@ -2124,7 +2188,7 @@ class _HomePageState extends State<HomePage> {
     final totalDays = lastDay.day;
     final today = DateTime.now();
 
-    final weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+    final weekdays = s.weekdaysSunFirst;
     final weeks = <List<DateTime>>[];
 
     List<DateTime> week = [];
@@ -2204,7 +2268,7 @@ class _HomePageState extends State<HomePage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        '오늘',
+                        s.today,
                         style: GoogleFonts.gaegu(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -2220,7 +2284,7 @@ class _HomePageState extends State<HomePage> {
                   _showYearMonthPicker();
                 },
                 child: Text(
-                  '${_displayMonth.year}년 ${_displayMonth.month}월',
+                  s.formatYearMonth(_displayMonth.year, _displayMonth.month),
                   style: GoogleFonts.gaegu(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -2358,13 +2422,9 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  String _formatDate(DateTime date) {
-    // DateTime.weekday: Monday=1, Tuesday=2, ..., Sunday=7
-    // weekdays 배열을 달력과 동일하게 일요일부터 시작
-    final weekdays = ['월', '화', '수', '목', '금', '토', '일'];
-    // weekday가 1(월)일 때 인덱스 0, weekday가 7(일)일 때 인덱스 6
-    // Monday=1 -> index 0, Tuesday=2 -> index 1, ..., Sunday=7 -> index 6
-    return '${date.year}년 ${date.month}월 ${date.day}일 (${weekdays[date.weekday - 1]})';
+  String _formatDate(DateTime date, HomeStrings s) {
+    final weekdayStr = s.weekdaysMonFirst[date.weekday - 1];
+    return s.formatDate(date.year, date.month, date.day, weekdayStr);
   }
 
   /// 감정 이름으로 색상 가져오기
@@ -2504,6 +2564,43 @@ class _HomePageState extends State<HomePage> {
       '기진맥진한': const Color(0xFF7986CB),
       '소모된': const Color(0xFF7986CB),
       '진이 빠진': const Color(0xFF7986CB),
+
+      // English (Mood Meter) - same colors as Korean equivalents
+      'Enraged': const Color(0xFFD32F2F),
+      'Anxious': const Color(0xFFD32F2F),
+      'Stressed': const Color(0xFFEF5350),
+      'Frustrated': const Color(0xFFEF5350),
+      'Angry': const Color(0xFFEF5350),
+      'Worried': const Color(0xFFE53935),
+      'Nervous': const Color(0xFFFF5722),
+      'Irritated': const Color(0xFFFF5722),
+      'Overwhelmed': const Color(0xFFFF9800),
+      'Excited': const Color(0xFFFFF176),
+      'Happy': const Color(0xFFFFEB3B),
+      'Joyful': const Color(0xFFFFEB3B),
+      'Content': const Color(0xFFFFD54F),
+      'Proud': const Color(0xFFFFCC02),
+      'Grateful': const Color(0xFF66BB6A),
+      'Amused': const Color(0xFFFFD54F),
+      'Hopeful': const Color(0xFFFFCC02),
+      'Optimistic': const Color(0xFFFFCC02),
+      'Calm': const Color(0xFFC5E1A5),
+      'Peaceful': const Color(0xFF81C784),
+      'Relaxed': const Color(0xFF81C784),
+      'Serene': const Color(0xFF81C784),
+      'Satisfied': const Color(0xFF81C784),
+      'Thankful': const Color(0xFF66BB6A),
+      'Comfortable': const Color(0xFF66BB6A),
+      'At ease': const Color(0xFF4CAF50),
+      'Sad': const Color(0xFF5C6BC0),
+      'Depressed': const Color(0xFF7986CB),
+      'Disappointed': const Color(0xFF3F51B5),
+      'Bored': const Color(0xFF7986CB),
+      'Tired': const Color(0xFF7986CB),
+      'Lonely': const Color(0xFF7986CB),
+      'Hopeless': const Color(0xFF7986CB),
+      'Down': const Color(0xFF7986CB),
+      'Exhausted': const Color(0xFF7986CB),
     };
 
     return emotionColors[emotion] ?? CupertinoColors.systemGrey;
@@ -2632,6 +2729,8 @@ class _HomePageState extends State<HomePage> {
   Future<void> _show6MonthMood() async {
     final user = _authService.getCurrentUser();
     if (user == null) return;
+    final languageCode = AppLocaleScope.of(context).code.code;
+    final s = HomeStrings.forLocale(AppLocaleScope.of(context).code);
 
     // 모바일 환경에서 HIVE가 초기화되지 않았으면 초기화
     if (!kIsWeb) {
@@ -2642,19 +2741,19 @@ class _HomePageState extends State<HomePage> {
         if (!mounted) return;
         showCupertinoDialog(
           context: context,
-          builder: (BuildContext context) => CupertinoAlertDialog(
+          builder: (BuildContext ctx) => CupertinoAlertDialog(
             title: Text(
-              '오류',
+              s.errorTitle,
               style: GoogleFonts.gaegu(fontSize: 18),
             ),
             content: Text(
-              '데이터를 불러올 수 없습니다.',
+              s.loadDataFailed,
               style: GoogleFonts.gaegu(fontSize: 16),
             ),
             actions: [
               CupertinoDialogAction(
-                child: const Text('확인'),
-                onPressed: () => Navigator.pop(context),
+                child: Text(HomeStrings.forLocale(AppLocaleScope.of(ctx).code).ok),
+                onPressed: () => Navigator.pop(ctx),
               ),
             ],
           ),
@@ -2673,7 +2772,7 @@ class _HomePageState extends State<HomePage> {
         '${sixMonthsAgoStart.year}-${sixMonthsAgoStart.month.toString().padLeft(2, '0')}-${today.year}-${today.month.toString().padLeft(2, '0')}';
 
     try {
-      String aiAdvice = '분석할 데이터가 없습니다.';
+      String aiAdvice = s.noDataForAnalysis;
       bool needsReanalysis = false;
       List<DiaryEntry> entries = [];
       Map<String, dynamic>? analysisData;
@@ -2752,7 +2851,7 @@ class _HomePageState extends State<HomePage> {
 
         if (!needsReanalysis) {
           // 기존 데이터 사용
-          aiAdvice = analysisData['advice'] ?? '분석할 데이터가 없습니다.';
+          aiAdvice = analysisData['advice'] ?? s.noDataForAnalysis;
           print('✅ 기존 분석 결과 사용 (재분석 불필요)');
         }
       } else {
@@ -2766,7 +2865,8 @@ class _HomePageState extends State<HomePage> {
 
         if (!mounted) return;
         if (!kIsWeb) {
-          // 모바일: 광고 모달 표시 (3초) + AI 분석 동시 진행
+          // 모바일: 미리 로드한 광고 모달 + 광고 표시(또는 실패) 후 3초 + AI 분석 동시 진행
+          final adDisplayedCompleter = Completer<void>();
           showCupertinoModalPopup<void>(
             context: context,
             builder: (ctx) => Stack(
@@ -2779,13 +2879,24 @@ class _HomePageState extends State<HomePage> {
                     color: CupertinoColors.black.withOpacity(0.4),
                   ),
                 ),
-                const analyzing_dialog.AnalyzingAdDialog(),
+                analyzing_dialog.AnalyzingAdDialog(
+                  onAdDisplayed: () {
+                    if (!adDisplayedCompleter.isCompleted) adDisplayedCompleter.complete();
+                  },
+                  preloadedAd: analyzing_dialog.PreloadedBannerHolder.ad,
+                  preloadedAdReady: analyzing_dialog.PreloadedBannerHolder.isReady,
+                  preloadedReadyNotifier:
+                      analyzing_dialog.PreloadedBannerHolder.readyNotifier,
+                ),
               ],
             ),
           );
+          final closeAfterAdFuture = adDisplayedCompleter.future
+              .timeout(const Duration(seconds: 10), onTimeout: () {})
+              .then((_) => Future.delayed(const Duration(seconds: 3)));
           try {
             await Future.wait([
-              Future.delayed(const Duration(seconds: 3)),
+              closeAfterAdFuture,
               Future(() async {
                 final Map<String, String> emotionMap = {};
                 for (final entry in entries) {
@@ -2797,7 +2908,7 @@ class _HomePageState extends State<HomePage> {
                   }
                 }
                 if (emotionMap.isNotEmpty) {
-                  aiAdvice = await _aiService.analyzeMoodPeriod(emotionMap);
+                  aiAdvice = await _aiService.analyzeMoodPeriod(emotionMap, languageCode: languageCode);
                   await LocalDiaryService.savePeriodAnalysis('6M_$periodKey', {
                     'period': '6M',
                     'startDate': sixMonthsAgoStart.toIso8601String(),
@@ -2808,12 +2919,15 @@ class _HomePageState extends State<HomePage> {
                   });
                   print('✅ AI 재분석 완료 및 저장');
                 } else {
-                  aiAdvice = '분석할 데이터가 없습니다.';
+                  aiAdvice = s.noDataForAnalysis;
                 }
               }),
             ]);
           } finally {
-            if (mounted) Navigator.of(context).pop();
+            if (mounted) {
+              Navigator.of(context).pop();
+              analyzing_dialog.PreloadedBannerHolder.releaseAndPreloadNext();
+            }
           }
         } else {
           // 웹: 로딩 다이얼로그 표시
@@ -2827,7 +2941,7 @@ class _HomePageState extends State<HomePage> {
                   const CupertinoActivityIndicator(radius: 20),
                   const SizedBox(height: 16),
                   Text(
-                    'AI 일기 분석 중...',
+                    s.analyzingPeriodWait,
                     style: GoogleFonts.gaegu(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
@@ -2835,7 +2949,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '잠시만 기다려주세요',
+                    s.pleaseWait,
                     style: GoogleFonts.gaegu(
                       fontSize: 15,
                       color: CupertinoColors.secondaryLabel,
@@ -2856,7 +2970,7 @@ class _HomePageState extends State<HomePage> {
               }
             }
             if (emotionMap.isNotEmpty) {
-              aiAdvice = await _aiService.analyzeMoodPeriod(emotionMap);
+              aiAdvice = await _aiService.analyzeMoodPeriod(emotionMap, languageCode: languageCode);
               await FirebaseFirestore.instance
                   .collection('diaries')
                   .doc(user.uid)
@@ -2872,7 +2986,7 @@ class _HomePageState extends State<HomePage> {
               });
               print('✅ AI 재분석 완료 및 저장');
             } else {
-              aiAdvice = '분석할 데이터가 없습니다.';
+              aiAdvice = s.noDataForAnalysis;
             }
           } finally {
             if (mounted) Navigator.of(context).pop();
@@ -2900,6 +3014,7 @@ class _HomePageState extends State<HomePage> {
       showCupertinoModalPopup(
         context: context,
         builder: (BuildContext popupContext) {
+          final sModal = HomeStrings.forLocale(AppLocaleScope.of(popupContext).code);
           final isDark = CupertinoTheme.brightnessOf(popupContext) == Brightness.dark;
           final gridLabelColor = isDark ? CupertinoColors.white : CupertinoColors.label.resolveFrom(popupContext);
           final gridCellEmptyColor = isDark ? const Color(0xFF2C2C2E) : CupertinoColors.systemGrey5.resolveFrom(popupContext);
@@ -2908,7 +3023,7 @@ class _HomePageState extends State<HomePage> {
           return CupertinoPageScaffold(
             navigationBar: CupertinoNavigationBar(
               middle: Text(
-                '지난 6개월 감정',
+                sModal.period6MonthTitle,
                 style: GoogleFonts.gaegu(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -2960,19 +3075,19 @@ class _HomePageState extends State<HomePage> {
       if (!mounted) return;
       showCupertinoDialog(
         context: context,
-        builder: (BuildContext context) => CupertinoAlertDialog(
+        builder: (BuildContext ctx) => CupertinoAlertDialog(
           title: Text(
-            '오류',
+            s.errorTitle,
             style: GoogleFonts.gaegu(fontSize: 18),
           ),
           content: Text(
-            '데이터를 불러올 수 없습니다.',
+            s.loadDataFailed,
             style: GoogleFonts.gaegu(fontSize: 16),
           ),
           actions: [
             CupertinoDialogAction(
-              child: const Text('확인'),
-              onPressed: () => Navigator.pop(context),
+              child: Text(HomeStrings.forLocale(AppLocaleScope.of(ctx).code).ok),
+              onPressed: () => Navigator.pop(ctx),
             ),
           ],
         ),
@@ -3127,6 +3242,8 @@ class _HomePageState extends State<HomePage> {
   Future<void> _show1YearMood() async {
     final user = _authService.getCurrentUser();
     if (user == null) return;
+    final languageCode = AppLocaleScope.of(context).code.code;
+    final s = HomeStrings.forLocale(AppLocaleScope.of(context).code);
 
     // 모바일 환경에서 HIVE가 초기화되지 않았으면 초기화
     if (!kIsWeb) {
@@ -3137,19 +3254,19 @@ class _HomePageState extends State<HomePage> {
         if (!mounted) return;
         showCupertinoDialog(
           context: context,
-          builder: (BuildContext context) => CupertinoAlertDialog(
+          builder: (BuildContext ctx) => CupertinoAlertDialog(
             title: Text(
-              '오류',
+              s.errorTitle,
               style: GoogleFonts.gaegu(fontSize: 18),
             ),
             content: Text(
-              '데이터를 불러올 수 없습니다.',
+              s.loadDataFailed,
               style: GoogleFonts.gaegu(fontSize: 16),
             ),
             actions: [
               CupertinoDialogAction(
-                child: const Text('확인'),
-                onPressed: () => Navigator.pop(context),
+                child: Text(HomeStrings.forLocale(AppLocaleScope.of(ctx).code).ok),
+                onPressed: () => Navigator.pop(ctx),
               ),
             ],
           ),
@@ -3168,7 +3285,7 @@ class _HomePageState extends State<HomePage> {
         '${oneYearAgoStart.year}-${oneYearAgoStart.month.toString().padLeft(2, '0')}-${today.year}-${today.month.toString().padLeft(2, '0')}';
 
     try {
-      String aiAdvice = '분석할 데이터가 없습니다.';
+      String aiAdvice = s.noDataForAnalysis;
       bool needsReanalysis = false;
       List<DiaryEntry> entries = [];
       Map<String, dynamic>? analysisData;
@@ -3247,7 +3364,7 @@ class _HomePageState extends State<HomePage> {
 
         if (!needsReanalysis) {
           // 기존 데이터 사용
-          aiAdvice = analysisData['advice'] ?? '분석할 데이터가 없습니다.';
+          aiAdvice = analysisData['advice'] ?? s.noDataForAnalysis;
           print('✅ 기존 분석 결과 사용 (재분석 불필요)');
         }
       } else {
@@ -3261,7 +3378,8 @@ class _HomePageState extends State<HomePage> {
 
         if (!mounted) return;
         if (!kIsWeb) {
-          // 모바일: 광고 모달 표시 (3초) + AI 분석 동시 진행
+          // 모바일: 미리 로드한 광고 모달 + 광고 표시(또는 실패) 후 3초 + AI 분석 동시 진행
+          final adDisplayedCompleter = Completer<void>();
           showCupertinoModalPopup<void>(
             context: context,
             builder: (ctx) => Stack(
@@ -3274,13 +3392,24 @@ class _HomePageState extends State<HomePage> {
                     color: CupertinoColors.black.withOpacity(0.4),
                   ),
                 ),
-                const analyzing_dialog.AnalyzingAdDialog(),
+                analyzing_dialog.AnalyzingAdDialog(
+                  onAdDisplayed: () {
+                    if (!adDisplayedCompleter.isCompleted) adDisplayedCompleter.complete();
+                  },
+                  preloadedAd: analyzing_dialog.PreloadedBannerHolder.ad,
+                  preloadedAdReady: analyzing_dialog.PreloadedBannerHolder.isReady,
+                  preloadedReadyNotifier:
+                      analyzing_dialog.PreloadedBannerHolder.readyNotifier,
+                ),
               ],
             ),
           );
+          final closeAfterAdFuture = adDisplayedCompleter.future
+              .timeout(const Duration(seconds: 10), onTimeout: () {})
+              .then((_) => Future.delayed(const Duration(seconds: 3)));
           try {
             await Future.wait([
-              Future.delayed(const Duration(seconds: 3)),
+              closeAfterAdFuture,
               Future(() async {
                 final Map<String, String> emotionMap = {};
                 for (final entry in entries) {
@@ -3292,7 +3421,7 @@ class _HomePageState extends State<HomePage> {
                   }
                 }
                 if (emotionMap.isNotEmpty) {
-                  aiAdvice = await _aiService.analyzeMoodPeriod(emotionMap);
+                  aiAdvice = await _aiService.analyzeMoodPeriod(emotionMap, languageCode: languageCode);
                   await LocalDiaryService.savePeriodAnalysis('1Y_$periodKey', {
                     'period': '1Y',
                     'startDate': oneYearAgoStart.toIso8601String(),
@@ -3303,12 +3432,15 @@ class _HomePageState extends State<HomePage> {
                   });
                   print('✅ AI 재분석 완료 및 저장');
                 } else {
-                  aiAdvice = '분석할 데이터가 없습니다.';
+                  aiAdvice = s.noDataForAnalysis;
                 }
               }),
             ]);
           } finally {
-            if (mounted) Navigator.of(context).pop();
+            if (mounted) {
+              Navigator.of(context).pop();
+              analyzing_dialog.PreloadedBannerHolder.releaseAndPreloadNext();
+            }
           }
         } else {
           // 웹: 로딩 다이얼로그 표시
@@ -3322,7 +3454,7 @@ class _HomePageState extends State<HomePage> {
                   const CupertinoActivityIndicator(radius: 20),
                   const SizedBox(height: 16),
                   Text(
-                    'AI 일기 분석 중...',
+                    s.analyzingPeriodWait,
                     style: GoogleFonts.gaegu(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
@@ -3330,7 +3462,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '잠시만 기다려주세요',
+                    s.pleaseWait,
                     style: GoogleFonts.gaegu(
                       fontSize: 15,
                       color: CupertinoColors.secondaryLabel,
@@ -3351,7 +3483,7 @@ class _HomePageState extends State<HomePage> {
               }
             }
             if (emotionMap.isNotEmpty) {
-              aiAdvice = await _aiService.analyzeMoodPeriod(emotionMap);
+              aiAdvice = await _aiService.analyzeMoodPeriod(emotionMap, languageCode: languageCode);
               await FirebaseFirestore.instance
                   .collection('diaries')
                   .doc(user.uid)
@@ -3367,7 +3499,7 @@ class _HomePageState extends State<HomePage> {
               });
               print('✅ AI 재분석 완료 및 저장');
             } else {
-              aiAdvice = '분석할 데이터가 없습니다.';
+              aiAdvice = s.noDataForAnalysis;
             }
           } finally {
             if (mounted) Navigator.of(context).pop();
@@ -3395,6 +3527,7 @@ class _HomePageState extends State<HomePage> {
       showCupertinoModalPopup(
         context: context,
         builder: (BuildContext popupContext) {
+          final sModal = HomeStrings.forLocale(AppLocaleScope.of(popupContext).code);
           final isDark = CupertinoTheme.brightnessOf(popupContext) == Brightness.dark;
           final gridLabelColor = isDark ? CupertinoColors.white : CupertinoColors.label.resolveFrom(popupContext);
           final gridCellEmptyColor = isDark ? const Color(0xFF2C2C2E) : CupertinoColors.systemGrey5.resolveFrom(popupContext);
@@ -3403,7 +3536,7 @@ class _HomePageState extends State<HomePage> {
           return CupertinoPageScaffold(
             navigationBar: CupertinoNavigationBar(
               middle: Text(
-                '지난 1년 감정',
+                sModal.period1YearTitle,
                 style: GoogleFonts.gaegu(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -3455,19 +3588,19 @@ class _HomePageState extends State<HomePage> {
       if (!mounted) return;
       showCupertinoDialog(
         context: context,
-        builder: (BuildContext context) => CupertinoAlertDialog(
+        builder: (BuildContext ctx) => CupertinoAlertDialog(
           title: Text(
-            '오류',
+            s.errorTitle,
             style: GoogleFonts.gaegu(fontSize: 18),
           ),
           content: Text(
-            '데이터를 불러올 수 없습니다.',
+            s.loadDataFailed,
             style: GoogleFonts.gaegu(fontSize: 16),
           ),
           actions: [
             CupertinoDialogAction(
-              child: const Text('확인'),
-              onPressed: () => Navigator.pop(context),
+              child: Text(HomeStrings.forLocale(AppLocaleScope.of(ctx).code).ok),
+              onPressed: () => Navigator.pop(ctx),
             ),
           ],
         ),
@@ -3683,6 +3816,7 @@ class _HomePageState extends State<HomePage> {
       showCupertinoModalPopup(
         context: context,
         builder: (BuildContext popupContext) {
+          final sSd = HomeStrings.forLocale(AppLocaleScope.of(popupContext).code);
           final isDark = CupertinoTheme.brightnessOf(popupContext) == Brightness.dark;
           final titleColor = isDark ? CupertinoColors.white : CupertinoColors.label.resolveFrom(popupContext);
           final cardEmptyBg = isDark ? const Color(0xFF2C2C2E) : CupertinoColors.systemGrey6.resolveFrom(popupContext);
@@ -3692,7 +3826,7 @@ class _HomePageState extends State<HomePage> {
           return CupertinoPageScaffold(
             navigationBar: CupertinoNavigationBar(
               middle: Text(
-                '$currentMonth월 $currentDay일의 추억',
+                sSd.sameDayMemoriesTitle(currentMonth, currentDay),
                 style: GoogleFonts.gaegu(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -3722,7 +3856,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            '아직 이날 기록이 없네요',
+                            sSd.noEntryOnThisDay,
                             style: GoogleFonts.gaegu(
                               fontSize: 17,
                               color: bodyTextColor,
@@ -3769,7 +3903,7 @@ class _HomePageState extends State<HomePage> {
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     Text(
-                                      '$year년',
+                                      sSd.formatYear(year),
                                       style: GoogleFonts.gaegu(
                                         fontSize: 19,
                                         fontWeight: FontWeight.w600,
@@ -3847,21 +3981,22 @@ class _HomePageState extends State<HomePage> {
       );
     } catch (e) {
       if (!mounted) return;
+      final sErr = HomeStrings.forLocale(AppLocaleScope.of(context).code);
       showCupertinoDialog(
         context: context,
-        builder: (BuildContext context) => CupertinoAlertDialog(
+        builder: (BuildContext ctx) => CupertinoAlertDialog(
           title: Text(
-            '오류',
+            sErr.errorTitle,
             style: GoogleFonts.gaegu(fontSize: 18),
           ),
           content: Text(
-            '데이터를 불러올 수 없습니다.',
+            sErr.loadDataFailed,
             style: GoogleFonts.gaegu(fontSize: 16),
           ),
           actions: [
             CupertinoDialogAction(
-              child: const Text('확인'),
-              onPressed: () => Navigator.pop(context),
+              child: Text(sErr.ok),
+              onPressed: () => Navigator.pop(ctx),
             ),
           ],
         ),
@@ -3876,158 +4011,153 @@ class _HomePageState extends State<HomePage> {
 
     showCupertinoModalPopup(
       context: context,
-      builder: (BuildContext context) => Container(
-        height: 300,
-        color: CupertinoColors.systemBackground,
-        child: SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              // 타이틀 바
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: const BoxDecoration(
-                  color: CupertinoColors.systemGrey6,
-                  border: Border(
-                    bottom: BorderSide(
-                      color: CupertinoColors.separator,
-                      width: 0.5,
+      builder: (BuildContext pickerContext) {
+        final s = HomeStrings.forLocale(AppLocaleScope.of(pickerContext).code);
+        return Container(
+          height: 300,
+          color: CupertinoColors.systemBackground,
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                // 타이틀 바
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: const BoxDecoration(
+                    color: CupertinoColors.systemGrey6,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: CupertinoColors.separator,
+                        width: 0.5,
+                      ),
                     ),
                   ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    CupertinoButton(
-                      padding: EdgeInsets.zero,
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(
-                        '취소',
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: () => Navigator.pop(pickerContext),
+                        child: Text(
+                          s.cancel,
+                          style: GoogleFonts.gaegu(
+                            fontSize: 17,
+                            color: CupertinoColors.destructiveRed,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        s.yearMonthSelectTitle,
                         style: GoogleFonts.gaegu(
-                          fontSize: 17,
-                          color: CupertinoColors.destructiveRed,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ),
-                    Text(
-                      '년월 선택',
-                      style: GoogleFonts.gaegu(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    CupertinoButton(
-                      padding: EdgeInsets.zero,
-                      onPressed: () async {
-                        // 선택한 년월로 업데이트
-                        // _displayMonth는 이미 년도/월 선택 시 업데이트됨
-                        setState(() {
-                          // 선택한 년월의 유효한 날짜로 설정
-                          final lastDayOfMonth = DateTime(_displayMonth.year,
-                                  _displayMonth.month + 1, 0)
-                              .day;
-                          final day = _selectedDate.day > lastDayOfMonth
-                              ? lastDayOfMonth
-                              : _selectedDate.day;
-                          _selectedDate = DateTime(
-                              _displayMonth.year, _displayMonth.month, day);
-                        });
-                        // 년/월 변경 시 일기 날짜 목록 다시 로드
-                        await _loadDiaryDates();
-                        await _loadDiaryForDate(_selectedDate);
-                        Navigator.pop(context);
-                      },
-                      child: Text(
-                        '확인',
-                        style: GoogleFonts.gaegu(
-                          fontSize: 17,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // 스크롤 선택 영역
-              Expanded(
-                child: Row(
-                  children: [
-                    // 년도 선택
-                    Expanded(
-                      child: CupertinoPicker(
-                        scrollController: FixedExtentScrollController(
-                          initialItem: currentYear - 2000,
-                        ),
-                        itemExtent: 44.0,
-                        children: List.generate(30, (index) {
-                          final year = 2000 + index;
-                          final isSelected = year == currentYear;
-                          return Center(
-                            child: Text(
-                              '$year년',
-                              style: GoogleFonts.gaegu(
-                                fontSize: isSelected ? 19 : 17,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.w400,
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : CupertinoColors.label,
-                              ),
-                            ),
-                          );
-                        }),
-                        onSelectedItemChanged: (int index) {
-                          final year = 2000 + index;
+                      CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: () async {
                           setState(() {
-                            // 현재 선택된 월(_displayMonth.month)을 사용
-                            _displayMonth = DateTime(year, _displayMonth.month);
+                            final lastDayOfMonth = DateTime(_displayMonth.year,
+                                    _displayMonth.month + 1, 0)
+                                .day;
+                            final day = _selectedDate.day > lastDayOfMonth
+                                ? lastDayOfMonth
+                                : _selectedDate.day;
+                            _selectedDate = DateTime(
+                                _displayMonth.year, _displayMonth.month, day);
                           });
+                          await _loadDiaryDates();
+                          await _loadDiaryForDate(_selectedDate);
+                          Navigator.pop(pickerContext);
                         },
-                      ),
-                    ),
-                    // 월 선택
-                    Expanded(
-                      child: CupertinoPicker(
-                        scrollController: FixedExtentScrollController(
-                          initialItem: currentMonth - 1,
+                        child: Text(
+                          s.ok,
+                          style: GoogleFonts.gaegu(
+                            fontSize: 17,
+                            color: AppColors.primary,
+                          ),
                         ),
-                        itemExtent: 44.0,
-                        children: List.generate(12, (index) {
-                          final month = index + 1;
-                          final isSelected = month == currentMonth;
-                          return Center(
-                            child: Text(
-                              '$month월',
-                              style: GoogleFonts.gaegu(
-                                fontSize: isSelected ? 19 : 17,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.w400,
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : CupertinoColors.label,
-                              ),
-                            ),
-                          );
-                        }),
-                        onSelectedItemChanged: (int index) {
-                          final month = index + 1;
-                          setState(() {
-                            // 현재 선택된 년도(_displayMonth.year)를 사용
-                            _displayMonth = DateTime(_displayMonth.year, month);
-                          });
-                        },
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                // 스크롤 선택 영역
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: CupertinoPicker(
+                          scrollController: FixedExtentScrollController(
+                            initialItem: currentYear - 2000,
+                          ),
+                          itemExtent: 44.0,
+                          children: List.generate(30, (index) {
+                            final year = 2000 + index;
+                            final isSelected = year == currentYear;
+                            return Center(
+                              child: Text(
+                                s.formatYear(year),
+                                style: GoogleFonts.gaegu(
+                                  fontSize: isSelected ? 19 : 17,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : CupertinoColors.label,
+                                ),
+                              ),
+                            );
+                          }),
+                          onSelectedItemChanged: (int index) {
+                            final year = 2000 + index;
+                            setState(() {
+                              _displayMonth = DateTime(year, _displayMonth.month);
+                            });
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: CupertinoPicker(
+                          scrollController: FixedExtentScrollController(
+                            initialItem: currentMonth - 1,
+                          ),
+                          itemExtent: 44.0,
+                          children: List.generate(12, (index) {
+                            final month = index + 1;
+                            final isSelected = month == currentMonth;
+                            return Center(
+                              child: Text(
+                                s.formatMonth(month),
+                                style: GoogleFonts.gaegu(
+                                  fontSize: isSelected ? 19 : 17,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : CupertinoColors.label,
+                                ),
+                              ),
+                            );
+                          }),
+                          onSelectedItemChanged: (int index) {
+                            final month = index + 1;
+                            setState(() {
+                              _displayMonth = DateTime(_displayMonth.year, month);
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

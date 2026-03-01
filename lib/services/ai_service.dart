@@ -114,17 +114,22 @@ class AIService {
   }
 
   /// 기간별 감정 변화를 분석하여 조언 제공
-  Future<String> analyzeMoodPeriod(Map<String, String> emotionMap) async {
+  /// [languageCode] 'ko' | 'en' - 조언 반환 언어
+  Future<String> analyzeMoodPeriod(Map<String, String> emotionMap,
+      {String languageCode = 'ko'}) async {
     lastCallUsedFallback = false;
+    final isEn = languageCode == 'en';
     try {
       await _ensureInitialized();
       if (_model == null) {
         lastCallUsedFallback = true;
-        return '감정 분석 데이터가 부족합니다. (AI API 키를 확인해 주세요.)';
+        return isEn
+            ? 'Not enough data for analysis. (Check AI API key.)'
+            : '감정 분석 데이터가 부족합니다. (AI API 키를 확인해 주세요.)';
       }
 
-      final prompt = _buildPeriodAnalysisPrompt(emotionMap);
-      print('🔵 기간별 감정 분석 API 호출 시작...');
+      final prompt = _buildPeriodAnalysisPrompt(emotionMap, languageCode);
+      print('🔵 기간별 감정 분석 API 호출 시작... (lang: $languageCode)');
 
       final response = await _model!.generateContent([Content.text(prompt)]);
 
@@ -134,17 +139,21 @@ class AIService {
         return advice.trim();
       } else {
         lastCallUsedFallback = true;
-        return '데이터를 분석할 수 없습니다.';
+        return isEn ? 'Unable to analyze data.' : '데이터를 분석할 수 없습니다.';
       }
     } catch (e) {
       print('❌ 기간별 분석 중 오류: $e');
       lastCallUsedFallback = true;
-      return '분석 중 문제가 발생했습니다. (API 키 및 네트워크를 확인해 주세요.)';
+      return isEn
+          ? 'Analysis failed. (Check API key and network.)'
+          : '분석 중 문제가 발생했습니다. (API 키 및 네트워크를 확인해 주세요.)';
     }
   }
 
   /// 일기를 분석하여 감정 상태를 파악
-  Future<MoodAnalysisResult?> analyzeDiary(String diaryContent) async {
+  /// [languageCode] 'ko' | 'en' - 감정 라벨과 조언을 반환할 언어
+  Future<MoodAnalysisResult?> analyzeDiary(String diaryContent,
+      {String languageCode = 'ko'}) async {
     lastCallUsedFallback = false;
     try {
       await _ensureInitialized();
@@ -152,16 +161,16 @@ class AIService {
       if (_model == null) {
         print('⚠️ API 키가 설정되지 않았습니다. setApiKey()를 먼저 호출하세요.');
         lastCallUsedFallback = true;
-        return _getDefaultAnalysis();
+        return _getDefaultAnalysis(languageCode);
       }
 
-      final prompt = _buildPrompt(diaryContent);
-      print('🔵 Gemini API 호출 시작...');
+      final prompt = _buildPrompt(diaryContent, languageCode);
+      print('🔵 Gemini API 호출 시작... (lang: $languageCode)');
 
       // API 호출 시도 (실패 시 다른 모델로 재시도)
       try {
         final response = await _model!.generateContent([Content.text(prompt)]);
-        return _processResponse(response);
+        return _processResponse(response, languageCode);
       } catch (e) {
         print('⚠️ API 호출 실패, 다른 모델로 재시도: $e');
         // 모델 초기화 상태 리셋
@@ -173,25 +182,26 @@ class AIService {
         if (_model == null) {
           print('⚠️ 모든 모델 초기화 실패');
           lastCallUsedFallback = true;
-          return _getDefaultAnalysis();
+          return _getDefaultAnalysis(languageCode);
         }
 
         final response = await _model!.generateContent([Content.text(prompt)]);
-        return _processResponse(response);
+        return _processResponse(response, languageCode);
       }
     } catch (e, stackTrace) {
       print('❌ AI 분석 중 오류 발생: $e');
       print('스택 트레이스: $stackTrace');
       lastCallUsedFallback = true;
-      return _getDefaultAnalysis();
+      return _getDefaultAnalysis(languageCode);
     }
   }
 
   /// API 응답 처리
-  MoodAnalysisResult _processResponse(GenerateContentResponse response) {
+  MoodAnalysisResult _processResponse(
+      GenerateContentResponse response, String languageCode) {
     if (response.text == null || response.text!.isEmpty) {
       print('⚠️ 응답이 비어있습니다');
-      return _getDefaultAnalysis();
+      return _getDefaultAnalysis(languageCode);
     }
 
     final generatedText = response.text!;
@@ -214,32 +224,75 @@ class AIService {
 
     // 파싱 실패 시 텍스트 분석 반환
     print('📝 텍스트 기반 분석으로 전환');
-    return _parseTextResponse(generatedText);
+    return _parseTextResponse(generatedText, languageCode);
   }
 
-  /// 기간별 감정 변화 분석 프롬프트 작성
-  String _buildPeriodAnalysisPrompt(Map<String, String> emotionMap) {
-    // 감정을 사분면별로 분류
-    Map<String, List<String>> quadrantEmotions = {
-      '노란색 (1분면)': [], // 높은 에너지 + 높은 쾌적함
-      '빨간색 (2분면)': [], // 높은 에너지 + 낮은 쾌적함
-      '파란색 (3분면)': [], // 낮은 에너지 + 낮은 쾌적함
-      '녹색 (4분면)': [], // 낮은 에너지 + 높은 쾌적함
-    };
+  /// 기간별 감정 변화 분석 프롬프트 작성 (한/영 지원)
+  String _buildPeriodAnalysisPrompt(Map<String, String> emotionMap, String languageCode) {
+    final isEn = languageCode == 'en';
+    // 감정을 사분면별로 분류 (한국어 + 영어 라벨 모두 처리)
+    final q1 = <String>[]; // 노란색: 높은 에너지 + 높은 쾌적함
+    final q2 = <String>[]; // 빨간색: 높은 에너지 + 낮은 쾌적함
+    final q3 = <String>[]; // 파란색: 낮은 에너지 + 낮은 쾌적함
+    final q4 = <String>[]; // 녹색: 낮은 에너지 + 높은 쾌적함
+    const q1Keywords = [
+      '행복한', '희망찬', '신나는', '긍정적인', '활발한', '동기부여된', '동기 부여된', '자랑스러운',
+      'Happy', 'Hopeful', 'Excited', 'Content', 'Joyful', 'Proud', 'Grateful', 'Optimistic',
+    ];
+    const q2Keywords = [
+      '화난', '걱정', '불안한', '스트레스', '초조한', '스트레스 받는',
+      'Angry', 'Anxious', 'Stressed', 'Worried', 'Nervous', 'Frustrated', 'Irritated',
+    ];
+    const q3Keywords = [
+      '슬픈', '우울한', '실망', '피곤한', '좌절한',
+      'Sad', 'Depressed', 'Tired', 'Down', 'Disappointed', 'Lonely', 'Hopeless',
+    ];
+    const q4Keywords = [
+      '평온한', '편안한', '만족', '감사', '차분한', '충만한',
+      'Calm', 'Peaceful', 'Relaxed', 'Serene', 'Satisfied', 'Thankful', 'Comfortable',
+    ];
 
     emotionMap.forEach((date, emotion) {
-      // 사분면 판단 (간단한 감정 키워드 기반)
-      if (['행복한', '희망찬', '신나는', '긍정적인', '활발한', '동기부여된', '자랑스러운']
-          .contains(emotion)) {
-        quadrantEmotions['노란색 (1분면)']!.add('$date: $emotion');
-      } else if (['화난', '걱정', '불안한', '스트레스', '초조한'].contains(emotion)) {
-        quadrantEmotions['빨간색 (2분면)']!.add('$date: $emotion');
-      } else if (['슬픈', '우울한', '실망', '피곤한', '좌절한'].contains(emotion)) {
-        quadrantEmotions['파란색 (3분면)']!.add('$date: $emotion');
-      } else if (['평온한', '편안한', '만족', '감사', '차분한'].contains(emotion)) {
-        quadrantEmotions['녹색 (4분면)']!.add('$date: $emotion');
+      if (q1Keywords.any((k) => emotion.contains(k))) {
+        q1.add('$date: $emotion');
+      } else if (q2Keywords.any((k) => emotion.contains(k))) {
+        q2.add('$date: $emotion');
+      } else if (q3Keywords.any((k) => emotion.contains(k))) {
+        q3.add('$date: $emotion');
+      } else if (q4Keywords.any((k) => emotion.contains(k))) {
+        q4.add('$date: $emotion');
       }
     });
+
+    final noneStr = isEn ? 'none' : '없음';
+    if (isEn) {
+      return '''
+You are a counseling expert. Analyze the user's mood over this period and give advice. Respond in English only.
+
+[Data]
+Total diary days: ${emotionMap.length}
+
+Quadrant distribution (Mood Meter):
+1. Yellow (high energy, pleasant): ${q1.length} entries
+   ${q1.isNotEmpty ? q1.take(3).join(', ') : noneStr}
+2. Red (high energy, unpleasant): ${q2.length} entries
+   ${q2.isNotEmpty ? q2.take(3).join(', ') : noneStr}
+3. Blue (low energy, unpleasant): ${q3.length} entries
+   ${q3.isNotEmpty ? q3.take(3).join(', ') : noneStr}
+4. Green (low energy, pleasant): ${q4.length} entries
+   ${q4.isNotEmpty ? q4.take(3).join(', ') : noneStr}
+
+[Guidelines]
+1. More yellow/green: positive period → congratulate and encourage.
+2. More red/blue: stress or low mood → suggest rest and self-care.
+3. Shift from 1,4 to 2,3: acknowledge and offer support.
+4. Shift from 2,3 to 1,4: praise improvement.
+5. Stuck in one quadrant: suggest balance.
+
+[Output]
+Write warm, friendly advice in English only, about 150 characters. Be specific and constructive, not just comforting.
+''';
+    }
 
     return '''
 당신은 심리상담 전문가입니다. 사용자의 기간별 감정 변화를 분석하여 조언을 제공해주세요.
@@ -248,17 +301,17 @@ class AIService {
 총 일기 작성일: ${emotionMap.length}일
 
 사분면별 감정 분포:
-1. 노란색 사분면 (높은 에너지 + 높은 쾌적함): ${quadrantEmotions['노란색 (1분면)']!.length}건
-   ${quadrantEmotions['노란색 (1분면)']!.isNotEmpty ? quadrantEmotions['노란색 (1분면)']!.take(3).join(', ') : '없음'}
+1. 노란색 사분면 (높은 에너지 + 높은 쾌적함): ${q1.length}건
+   ${q1.isNotEmpty ? q1.take(3).join(', ') : noneStr}
 
-2. 빨간색 사분면 (높은 에너지 + 낮은 쾌적함): ${quadrantEmotions['빨간색 (2분면)']!.length}건
-   ${quadrantEmotions['빨간색 (2분면)']!.isNotEmpty ? quadrantEmotions['빨간색 (2분면)']!.take(3).join(', ') : '없음'}
+2. 빨간색 사분면 (높은 에너지 + 낮은 쾌적함): ${q2.length}건
+   ${q2.isNotEmpty ? q2.take(3).join(', ') : noneStr}
 
-3. 파란색 사분면 (낮은 에너지 + 낮은 쾌적함): ${quadrantEmotions['파란색 (3분면)']!.length}건
-   ${quadrantEmotions['파란색 (3분면)']!.isNotEmpty ? quadrantEmotions['파란색 (3분면)']!.take(3).join(', ') : '없음'}
+3. 파란색 사분면 (낮은 에너지 + 낮은 쾌적함): ${q3.length}건
+   ${q3.isNotEmpty ? q3.take(3).join(', ') : noneStr}
 
-4. 녹색 사분면 (낮은 에너지 + 높은 쾌적함): ${quadrantEmotions['녹색 (4분면)']!.length}건
-   ${quadrantEmotions['녹색 (4분면)']!.isNotEmpty ? quadrantEmotions['녹색 (4분면)']!.take(3).join(', ') : '없음'}
+4. 녹색 사분면 (낮은 에너지 + 높은 쾌적함): ${q4.length}건
+   ${q4.isNotEmpty ? q4.take(3).join(', ') : noneStr}
 
 [분석 지침]
 1. 1분면(노란색)과 4분면(녹색)의 비율이 높으면 긍정적 감정이 많은 것으로 보이며, 축하와 격려 조언
@@ -276,8 +329,16 @@ class AIService {
 ''';
   }
 
-  /// Marc Brackett의 Mood Meter 기반 프롬프트 작성
-  String _buildPrompt(String diaryContent) {
+  /// Marc Brackett의 Mood Meter 기반 프롬프트 작성 (선택 언어에 따라 감정·조언 언어 지정)
+  String _buildPrompt(String diaryContent, String languageCode) {
+    final isEn = languageCode == 'en';
+    if (isEn) {
+      return _buildPromptEn(diaryContent);
+    }
+    return _buildPromptKo(diaryContent);
+  }
+
+  String _buildPromptKo(String diaryContent) {
     return '''
 당신은 감정 분석 전문 AI입니다. Marc Brackett의 Mood Meter 이론을 기반으로 사용자의 일기 내용을 분석해주세요.
 
@@ -335,65 +396,101 @@ class AIService {
 ''';
   }
 
-  /// 텍스트 응답을 파싱 (JSON 파싱 실패 시)
-  MoodAnalysisResult _parseTextResponse(String text) {
-    // 간단한 키워드 기반 분석 - Mood Meter 구조로 변환
-    final highEnergyKeywords = [
-      '행복',
-      '기쁨',
-      '좋',
-      '감사',
-      '즐거',
-      '희망',
-      '성공',
-      '사랑',
-      '만족',
-      '화',
-      '걱정',
-      '불안',
-      '스트레스'
-    ];
-    final pleasantKeywords = [
-      '행복',
-      '기쁨',
-      '좋',
-      '감사',
-      '즐거',
-      '희망',
-      '성공',
-      '사랑',
-      '만족'
-    ];
-    final unpleasantKeywords = [
-      '슬',
-      '우울',
-      '화',
-      '걱정',
-      '불안',
-      '힘들',
-      '어렵',
-      '스트레스',
-      '실망'
-    ];
+  String _buildPromptEn(String diaryContent) {
+    return '''
+You are an emotion analysis AI. Analyze the user's diary based on Marc Brackett's Mood Meter and respond in English only.
+
+[Mood Meter - Emotions and colors]
+Use ONLY these emotion words (no variations):
+
+Red / high energy, unpleasant:
+Enraged, Anxious, Stressed, Frustrated, Angry, Worried, Nervous, Irritated, Overwhelmed
+
+Yellow / high energy, pleasant:
+Excited, Happy, Joyful, Content, Proud, Grateful, Amused, Hopeful, Optimistic
+
+Green / low energy, pleasant:
+Calm, Peaceful, Relaxed, Serene, Satisfied, Thankful, Comfortable, At ease
+
+Blue / low energy, unpleasant:
+Sad, Depressed, Disappointed, Bored, Tired, Lonely, Hopeless, Down, Exhausted
+
+Diary content:
+"$diaryContent"
+
+Respond with this JSON only:
+{
+  "emotions": ["emotion1", "emotion2", "emotion3"],
+  "moodWeights": {
+    "emotion1": number between 0.0 and 1.0,
+    "emotion2": number between 0.0 and 1.0,
+    "emotion3": number between 0.0 and 1.0
+  },
+  "advice": "Brief, warm advice in English (about 100 characters) as a counselor, acknowledging their feelings."
+}
+
+Rules:
+1. Use ONLY the emotion words from the list above.
+2. Pick exactly 3 emotions and provide moodWeights (sum = 1.0).
+3. Write advice in English only.
+4. Return valid JSON only.
+''';
+  }
+
+  /// 텍스트 응답을 파싱 (JSON 파싱 실패 시) - [languageCode]에 따라 반환 언어 결정
+  MoodAnalysisResult _parseTextResponse(String text, String languageCode) {
+    final isEn = languageCode == 'en';
+    // 키워드: 한글/영어 공통으로 검사 (일기 내용이 어떤 언어일 수 있음)
+    final highEnergyKeywords = isEn
+        ? ['happy', 'joy', 'good', 'love', 'excited', 'hope', 'success']
+        : ['행복', '기쁨', '좋', '감사', '즐거', '희망', '성공', '사랑', '만족', '화', '걱정', '불안', '스트레스'];
+    final pleasantKeywords = isEn
+        ? ['happy', 'joy', 'good', 'love', 'grateful', 'hope', 'success']
+        : ['행복', '기쁨', '좋', '감사', '즐거', '희망', '성공', '사랑', '만족'];
+    final unpleasantKeywords = isEn
+        ? ['sad', 'angry', 'worried', 'tired', 'stress', 'disappointed']
+        : ['슬', '우울', '화', '걱정', '불안', '힘들', '어렵', '스트레스', '실망'];
 
     int highEnergyCount = 0;
     int pleasantCount = 0;
     int unpleasantCount = 0;
+    final lower = text.toLowerCase();
 
     for (final keyword in highEnergyKeywords) {
-      if (text.contains(keyword)) highEnergyCount++;
+      if (lower.contains(keyword.toLowerCase())) highEnergyCount++;
     }
     for (final keyword in pleasantKeywords) {
-      if (text.contains(keyword)) pleasantCount++;
+      if (lower.contains(keyword.toLowerCase())) pleasantCount++;
     }
     for (final keyword in unpleasantKeywords) {
-      if (text.contains(keyword)) unpleasantCount++;
+      if (lower.contains(keyword.toLowerCase())) unpleasantCount++;
     }
 
-    // 감정 결정 (Mood Meter 정식 용어만 사용)
+    if (isEn) {
+      List<String> emotions;
+      Map<String, double> moodWeights;
+      if (pleasantCount > unpleasantCount && highEnergyCount > 0) {
+        emotions = ['Happy', 'Content', 'Hopeful'];
+        moodWeights = {'Happy': 0.5, 'Content': 0.3, 'Hopeful': 0.2};
+      } else if (pleasantCount <= unpleasantCount && highEnergyCount > 0) {
+        emotions = ['Anxious', 'Stressed', 'Worried'];
+        moodWeights = {'Anxious': 0.5, 'Stressed': 0.3, 'Worried': 0.2};
+      } else if (pleasantCount <= unpleasantCount && highEnergyCount == 0) {
+        emotions = ['Sad', 'Tired', 'Down'];
+        moodWeights = {'Sad': 0.5, 'Tired': 0.3, 'Down': 0.2};
+      } else {
+        emotions = ['Calm', 'Peaceful', 'Relaxed'];
+        moodWeights = {'Calm': 0.5, 'Peaceful': 0.3, 'Relaxed': 0.2};
+      }
+      return MoodAnalysisResult(
+        emotions: emotions,
+        advice: 'Your feelings matter. Take time to rest and be kind to yourself.',
+        moodWeights: moodWeights,
+      );
+    }
+
     List<String> emotions;
     Map<String, double> moodWeights;
-
     if (pleasantCount > unpleasantCount && highEnergyCount > 0) {
       emotions = ['행복한', '긍정적인', '활발한'];
       moodWeights = {'행복한': 0.5, '긍정적인': 0.3, '활발한': 0.2};
@@ -407,7 +504,6 @@ class AIService {
       emotions = ['평온한', '편안한', '충만한'];
       moodWeights = {'평온한': 0.5, '편안한': 0.3, '충만한': 0.2};
     }
-
     return MoodAnalysisResult(
       emotions: emotions,
       advice: '오늘 하루도 수고하셨어요. 작은 감정의 변화도 소중합니다. 내일을 위해 충분히 휴식하세요.',
@@ -415,8 +511,16 @@ class AIService {
     );
   }
 
-  /// 기본 분석 결과 반환 (API 호출 실패 시)
-  MoodAnalysisResult _getDefaultAnalysis() {
+  /// 기본 분석 결과 반환 (API 호출 실패 시) - [languageCode]에 따라 반환 언어 결정
+  MoodAnalysisResult _getDefaultAnalysis(String languageCode) {
+    final isEn = languageCode == 'en';
+    if (isEn) {
+      return MoodAnalysisResult(
+        emotions: ['Calm', 'Peaceful', 'Relaxed'],
+        advice: 'How was your day? Small changes in mood matter. Get some rest for tomorrow.',
+        moodWeights: {'Calm': 0.4, 'Peaceful': 0.3, 'Relaxed': 0.3},
+      );
+    }
     return MoodAnalysisResult(
       emotions: ['평온한', '편안한', '충만한'],
       advice: '오늘 하루는 어떠셨나요? 작은 감정의 변화도 소중합니다. 내일을 위해 충분히 휴식하세요.',
