@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Color;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../config/ad_config.dart';
 import '../main.dart';
 
 /// 일기 저장 시 "일기 분석 중" 메시지 + 하단 AdMob 배너 모달
@@ -18,12 +19,12 @@ class _AnalyzingAdDialogState extends State<AnalyzingAdDialog> {
   bool _isAdLoaded = false;
   bool _adLoadFailed = false;
 
-  /// 배너 광고 단위 ID. 실제 배포 시 AdMob 콘솔에서 발급한 ID로 교체하세요.
+  /// 배너 광고 단위 ID (실제 ID는 lib/config/ad_config.dart 에서 설정)
   static String get _bannerAdUnitId {
     if (Platform.isIOS) {
-      return 'ca-app-pub-3940256099942544/2934735716'; // iOS 테스트
+      return AdConfig.bannerAdUnitIdIos;
     }
-    return 'ca-app-pub-3940256099942544/6300978111'; // Android 테스트
+    return AdConfig.bannerAdUnitIdAndroid;
   }
 
   @override
@@ -42,7 +43,11 @@ class _AnalyzingAdDialogState extends State<AnalyzingAdDialog> {
           if (mounted) setState(() => _isAdLoaded = true);
         },
         onAdFailedToLoad: (ad, error) {
-          debugPrint('BannerAd failed to load: code=${error.code}, domain=${error.domain}, message=${error.message}');
+          // 광고 미표시 원인 확인: Xcode/Android Studio 로그에서 이 메시지 확인
+          debugPrint(
+            'BannerAd 실패: code=${error.code}, domain=${error.domain}, message=${error.message}. '
+            'adUnitId=$_bannerAdUnitId (lib/config/ad_config.dart에서 실제 광고 단위 ID로 교체 필요)',
+          );
           ad.dispose();
           if (mounted) setState(() {
             _adLoadFailed = true;

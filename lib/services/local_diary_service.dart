@@ -3,6 +3,11 @@ import 'dart:io' show Platform;
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/diary_entry.dart';
 
+/// 로컬 일기 저장 (Hive, 모바일 전용).
+///
+/// **앱 업데이트 시 데이터 보존**: Box 이름(diaries_$userId, period_analysis_$userId)과
+/// Map 저장 형식은 변경하지 않습니다. 새 버전 빌드/설치 시에도 기존 Hive 데이터는
+/// 그대로 유지됩니다. deleteBoxFromDisk는 손상(corrupt/invalid/lock) 또는 탈퇴 시에만 호출됩니다.
 class LocalDiaryService {
   static const String _diaryBoxPrefix = 'diaries_';
   static const String _analysisBoxPrefix = 'period_analysis_';

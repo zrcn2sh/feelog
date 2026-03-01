@@ -1575,7 +1575,7 @@ class _HomePageState extends State<HomePage> {
     }
 
     try {
-      // 모바일: "일기 분석 중" 모달 + AdMob 배너 표시 (최소 3초). Cupertino 모달 사용으로 MaterialLocalizations 불필요.
+      // 모바일: "일기 분석 중" 모달 + AdMob 배너 표시 (3초). Cupertino 모달 사용으로 MaterialLocalizations 불필요.
       if (!kIsWeb) {
         showCupertinoModalPopup<void>(
           context: context,
@@ -1596,7 +1596,7 @@ class _HomePageState extends State<HomePage> {
       }
 
       await Future.wait([
-        Future.delayed(const Duration(seconds: 5)),
+        Future.delayed(const Duration(seconds: 3)),
         _performSaveDiaryWork(),
       ]);
 
@@ -2764,60 +2764,99 @@ class _HomePageState extends State<HomePage> {
         // AI 분석 필요
         print('🔄 AI 재분석 시작...');
 
-        // 로딩 다이얼로그 표시
         if (!mounted) return;
-        showCupertinoDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) => CupertinoAlertDialog(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
+        if (!kIsWeb) {
+          // 모바일: 광고 모달 표시 (3초) + AI 분석 동시 진행
+          showCupertinoModalPopup<void>(
+            context: context,
+            builder: (ctx) => Stack(
+              alignment: Alignment.center,
               children: [
-                const CupertinoActivityIndicator(
-                  radius: 20,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'AI 일기 분석 중...',
-                  style: GoogleFonts.gaegu(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
+                GestureDetector(
+                  onTap: () {},
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    color: CupertinoColors.black.withOpacity(0.4),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  '잠시만 기다려주세요',
-                  style: GoogleFonts.gaegu(
-                    fontSize: 15,
-                    color: CupertinoColors.secondaryLabel,
-                  ),
-                ),
+                const analyzing_dialog.AnalyzingAdDialog(),
               ],
             ),
-          ),
-        );
-
-        try {
-          // 날짜별 감정 색상 매핑 및 감정 정보 수집
-          final Map<String, String> emotionMap = {};
-
-          for (final entry in entries) {
-            final dateStr =
-                '${entry.date.year}-${entry.date.month.toString().padLeft(2, '0')}-${entry.date.day.toString().padLeft(2, '0')}';
-
-            if (entry.moodAnalysis != null &&
-                entry.moodAnalysis!.emotions.isNotEmpty) {
-              emotionMap[dateStr] = entry.moodAnalysis!.emotions[0];
-            }
+          );
+          try {
+            await Future.wait([
+              Future.delayed(const Duration(seconds: 3)),
+              Future(() async {
+                final Map<String, String> emotionMap = {};
+                for (final entry in entries) {
+                  final dateStr =
+                      '${entry.date.year}-${entry.date.month.toString().padLeft(2, '0')}-${entry.date.day.toString().padLeft(2, '0')}';
+                  if (entry.moodAnalysis != null &&
+                      entry.moodAnalysis!.emotions.isNotEmpty) {
+                    emotionMap[dateStr] = entry.moodAnalysis!.emotions[0];
+                  }
+                }
+                if (emotionMap.isNotEmpty) {
+                  aiAdvice = await _aiService.analyzeMoodPeriod(emotionMap);
+                  await LocalDiaryService.savePeriodAnalysis('6M_$periodKey', {
+                    'period': '6M',
+                    'startDate': sixMonthsAgoStart.toIso8601String(),
+                    'endDate': today.toIso8601String(),
+                    'advice': aiAdvice,
+                    'createdAt': DateTime.now().toIso8601String(),
+                    'updatedAt': DateTime.now().toIso8601String(),
+                  });
+                  print('✅ AI 재분석 완료 및 저장');
+                } else {
+                  aiAdvice = '분석할 데이터가 없습니다.';
+                }
+              }),
+            ]);
+          } finally {
+            if (mounted) Navigator.of(context).pop();
           }
-
-          // AI 기간별 분석 실행
-          if (emotionMap.isNotEmpty) {
-            aiAdvice = await _aiService.analyzeMoodPeriod(emotionMap);
-
-            // 분석 결과 저장 (플랫폼에 따라)
-            if (kIsWeb) {
-              // 웹: Firebase에 저장
+        } else {
+          // 웹: 로딩 다이얼로그 표시
+          showCupertinoDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) => CupertinoAlertDialog(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CupertinoActivityIndicator(radius: 20),
+                  const SizedBox(height: 16),
+                  Text(
+                    'AI 일기 분석 중...',
+                    style: GoogleFonts.gaegu(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '잠시만 기다려주세요',
+                    style: GoogleFonts.gaegu(
+                      fontSize: 15,
+                      color: CupertinoColors.secondaryLabel,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+          try {
+            final Map<String, String> emotionMap = {};
+            for (final entry in entries) {
+              final dateStr =
+                  '${entry.date.year}-${entry.date.month.toString().padLeft(2, '0')}-${entry.date.day.toString().padLeft(2, '0')}';
+              if (entry.moodAnalysis != null &&
+                  entry.moodAnalysis!.emotions.isNotEmpty) {
+                emotionMap[dateStr] = entry.moodAnalysis!.emotions[0];
+              }
+            }
+            if (emotionMap.isNotEmpty) {
+              aiAdvice = await _aiService.analyzeMoodPeriod(emotionMap);
               await FirebaseFirestore.instance
                   .collection('diaries')
                   .doc(user.uid)
@@ -2831,25 +2870,12 @@ class _HomePageState extends State<HomePage> {
                 'createdAt': FieldValue.serverTimestamp(),
                 'updatedAt': FieldValue.serverTimestamp(),
               });
+              print('✅ AI 재분석 완료 및 저장');
             } else {
-              // 모바일: Hive에 저장
-              await LocalDiaryService.savePeriodAnalysis('6M_$periodKey', {
-                'period': '6M',
-                'startDate': sixMonthsAgoStart.toIso8601String(),
-                'endDate': today.toIso8601String(),
-                'advice': aiAdvice,
-                'createdAt': DateTime.now().toIso8601String(),
-                'updatedAt': DateTime.now().toIso8601String(),
-              });
+              aiAdvice = '분석할 데이터가 없습니다.';
             }
-            print('✅ AI 재분석 완료 및 저장');
-          } else {
-            aiAdvice = '분석할 데이터가 없습니다.';
-          }
-        } finally {
-          // 로딩 다이얼로그 닫기
-          if (mounted) {
-            Navigator.of(context).pop();
+          } finally {
+            if (mounted) Navigator.of(context).pop();
           }
         }
       }
@@ -3233,60 +3259,99 @@ class _HomePageState extends State<HomePage> {
         // AI 분석 필요
         print('🔄 AI 재분석 시작...');
 
-        // 로딩 다이얼로그 표시
         if (!mounted) return;
-        showCupertinoDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) => CupertinoAlertDialog(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
+        if (!kIsWeb) {
+          // 모바일: 광고 모달 표시 (3초) + AI 분석 동시 진행
+          showCupertinoModalPopup<void>(
+            context: context,
+            builder: (ctx) => Stack(
+              alignment: Alignment.center,
               children: [
-                const CupertinoActivityIndicator(
-                  radius: 20,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'AI 일기 분석 중...',
-                  style: GoogleFonts.gaegu(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
+                GestureDetector(
+                  onTap: () {},
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    color: CupertinoColors.black.withOpacity(0.4),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  '잠시만 기다려주세요',
-                  style: GoogleFonts.gaegu(
-                    fontSize: 15,
-                    color: CupertinoColors.secondaryLabel,
-                  ),
-                ),
+                const analyzing_dialog.AnalyzingAdDialog(),
               ],
             ),
-          ),
-        );
-
-        try {
-          // 날짜별 감정 색상 매핑 및 감정 정보 수집
-          final Map<String, String> emotionMap = {};
-
-          for (final entry in entries) {
-            final dateStr =
-                '${entry.date.year}-${entry.date.month.toString().padLeft(2, '0')}-${entry.date.day.toString().padLeft(2, '0')}';
-
-            if (entry.moodAnalysis != null &&
-                entry.moodAnalysis!.emotions.isNotEmpty) {
-              emotionMap[dateStr] = entry.moodAnalysis!.emotions[0];
-            }
+          );
+          try {
+            await Future.wait([
+              Future.delayed(const Duration(seconds: 3)),
+              Future(() async {
+                final Map<String, String> emotionMap = {};
+                for (final entry in entries) {
+                  final dateStr =
+                      '${entry.date.year}-${entry.date.month.toString().padLeft(2, '0')}-${entry.date.day.toString().padLeft(2, '0')}';
+                  if (entry.moodAnalysis != null &&
+                      entry.moodAnalysis!.emotions.isNotEmpty) {
+                    emotionMap[dateStr] = entry.moodAnalysis!.emotions[0];
+                  }
+                }
+                if (emotionMap.isNotEmpty) {
+                  aiAdvice = await _aiService.analyzeMoodPeriod(emotionMap);
+                  await LocalDiaryService.savePeriodAnalysis('1Y_$periodKey', {
+                    'period': '1Y',
+                    'startDate': oneYearAgoStart.toIso8601String(),
+                    'endDate': today.toIso8601String(),
+                    'advice': aiAdvice,
+                    'createdAt': DateTime.now().toIso8601String(),
+                    'updatedAt': DateTime.now().toIso8601String(),
+                  });
+                  print('✅ AI 재분석 완료 및 저장');
+                } else {
+                  aiAdvice = '분석할 데이터가 없습니다.';
+                }
+              }),
+            ]);
+          } finally {
+            if (mounted) Navigator.of(context).pop();
           }
-
-          // AI 기간별 분석 실행
-          if (emotionMap.isNotEmpty) {
-            aiAdvice = await _aiService.analyzeMoodPeriod(emotionMap);
-
-            // 분석 결과 저장 (플랫폼에 따라)
-            if (kIsWeb) {
-              // 웹: Firebase에 저장
+        } else {
+          // 웹: 로딩 다이얼로그 표시
+          showCupertinoDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) => CupertinoAlertDialog(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CupertinoActivityIndicator(radius: 20),
+                  const SizedBox(height: 16),
+                  Text(
+                    'AI 일기 분석 중...',
+                    style: GoogleFonts.gaegu(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '잠시만 기다려주세요',
+                    style: GoogleFonts.gaegu(
+                      fontSize: 15,
+                      color: CupertinoColors.secondaryLabel,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+          try {
+            final Map<String, String> emotionMap = {};
+            for (final entry in entries) {
+              final dateStr =
+                  '${entry.date.year}-${entry.date.month.toString().padLeft(2, '0')}-${entry.date.day.toString().padLeft(2, '0')}';
+              if (entry.moodAnalysis != null &&
+                  entry.moodAnalysis!.emotions.isNotEmpty) {
+                emotionMap[dateStr] = entry.moodAnalysis!.emotions[0];
+              }
+            }
+            if (emotionMap.isNotEmpty) {
+              aiAdvice = await _aiService.analyzeMoodPeriod(emotionMap);
               await FirebaseFirestore.instance
                   .collection('diaries')
                   .doc(user.uid)
@@ -3300,25 +3365,12 @@ class _HomePageState extends State<HomePage> {
                 'createdAt': FieldValue.serverTimestamp(),
                 'updatedAt': FieldValue.serverTimestamp(),
               });
+              print('✅ AI 재분석 완료 및 저장');
             } else {
-              // 모바일: Hive에 저장
-              await LocalDiaryService.savePeriodAnalysis('1Y_$periodKey', {
-                'period': '1Y',
-                'startDate': oneYearAgoStart.toIso8601String(),
-                'endDate': today.toIso8601String(),
-                'advice': aiAdvice,
-                'createdAt': DateTime.now().toIso8601String(),
-                'updatedAt': DateTime.now().toIso8601String(),
-              });
+              aiAdvice = '분석할 데이터가 없습니다.';
             }
-            print('✅ AI 재분석 완료 및 저장');
-          } else {
-            aiAdvice = '분석할 데이터가 없습니다.';
-          }
-        } finally {
-          // 로딩 다이얼로그 닫기
-          if (mounted) {
-            Navigator.of(context).pop();
+          } finally {
+            if (mounted) Navigator.of(context).pop();
           }
         }
       }

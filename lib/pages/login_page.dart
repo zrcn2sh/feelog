@@ -73,6 +73,16 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    // 앱 테마 밝기 사용 (설정에서 다크 모드 선택 시 반영)
+    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final textColor = isDark ? CupertinoColors.white : CupertinoColors.label;
+    final secondaryTextColor = isDark
+        ? CupertinoColors.white
+        : CupertinoColors.secondaryLabel;
+    final tertiaryTextColor = isDark
+        ? CupertinoColors.white.withOpacity(0.85)
+        : CupertinoColors.tertiaryLabel;
+
     return CupertinoPageScaffold(
       backgroundColor: CupertinoColors.systemBackground,
       child: SafeArea(
@@ -134,7 +144,7 @@ class _LoginPageState extends State<LoginPage> {
                 style: GoogleFonts.gaegu(
                   fontSize: 37,
                   fontWeight: FontWeight.w700,
-                  color: CupertinoColors.label,
+                  color: textColor,
                   letterSpacing: -0.5,
                 ),
               ),
@@ -147,7 +157,7 @@ class _LoginPageState extends State<LoginPage> {
                 textAlign: TextAlign.center,
                 style: GoogleFonts.gaegu(
                   fontSize: 18,
-                  color: CupertinoColors.secondaryLabel,
+                  color: secondaryTextColor,
                   fontWeight: FontWeight.w400,
                 ),
               ),
@@ -227,7 +237,7 @@ class _LoginPageState extends State<LoginPage> {
                 textAlign: TextAlign.center,
                 style: GoogleFonts.gaegu(
                   fontSize: 14,
-                  color: CupertinoColors.secondaryLabel,
+                  color: secondaryTextColor,
                   fontWeight: FontWeight.w400,
                 ),
               ),
@@ -242,7 +252,7 @@ class _LoginPageState extends State<LoginPage> {
                     style: GoogleFonts.gaegu(
                       fontSize: 13,
                       fontWeight: FontWeight.w400,
-                      color: CupertinoColors.secondaryLabel,
+                      color: secondaryTextColor,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -251,7 +261,7 @@ class _LoginPageState extends State<LoginPage> {
                     style: GoogleFonts.gaegu(
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
-                      color: CupertinoColors.tertiaryLabel,
+                      color: tertiaryTextColor,
                     ),
                   ),
                 ],
