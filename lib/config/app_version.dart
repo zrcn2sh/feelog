@@ -7,7 +7,7 @@ class AppVersion {
   static String version = fallbackVersion;
 
   /// 플러그인 미지원 환경(웹 디버그 등)에서 사용할 폴백 버전
-  static const String fallbackVersion = '1.2.1';
+  static const String fallbackVersion = '1.2.4';
 
   /// 개발자명
   static const String developer = 'Nat-dwi @idosquare';

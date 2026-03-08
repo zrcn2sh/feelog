@@ -1,6 +1,5 @@
 import 'dart:io' show Platform;
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show Color;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../config/ad_config.dart';

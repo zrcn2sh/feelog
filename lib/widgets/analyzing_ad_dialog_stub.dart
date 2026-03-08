@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:google_fonts/google_fonts.dart';
 import '../config/app_locale.dart';
 import '../config/home_strings.dart';

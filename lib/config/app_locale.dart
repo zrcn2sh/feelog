@@ -24,7 +24,7 @@ enum AppLocaleCode {
 /// 앱 언어 상태 관리 및 저장
 class AppLocale extends ChangeNotifier {
   AppLocale({String? initialCode})
-      : _code = AppLocaleCode.fromCode(initialCode ?? null);
+      : _code = AppLocaleCode.fromCode(initialCode);
 
   AppLocaleCode _code;
 

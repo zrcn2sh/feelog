@@ -114,7 +114,7 @@ class HomeStrings {
   String diaryCount(int n) => _isKo ? '총 $n개의 일기' : '$n diaries';
   String andMore(int n) => _isKo ? '... 외 $n개' : '... +$n more';
   String diaryEntryLine(String date, int chars) =>
-      _isKo ? '• $date (${chars}자)' : '• $date ($chars chars)';
+      _isKo ? '• $date ($chars자)' : '• $date ($chars chars)';
   String noDiaryInYear(int year) =>
       _isKo ? '$year년에 작성한 일기가 없습니다.' : 'No diaries in $year.';
   String formatDate(int year, int month, int day, String weekday) =>
@@ -130,7 +130,7 @@ class HomeStrings {
   /// 사용자 정보 > 월별 일기 작성 수 차트 제목
   String monthlyDiaryChartTitle(int year) =>
       _isKo ? '$year년 월별 일기 작성 수' : 'Diaries per month, $year';
-  String debugTotalCount(int n) => _isKo ? '총 일기 수: ${n}개' : 'Total diaries: $n';
+  String debugTotalCount(int n) => _isKo ? '총 일기 수: $n개' : 'Total diaries: $n';
 
   static const List<String> _enMonths = [
     'January', 'February', 'March', 'April', 'May', 'June',
