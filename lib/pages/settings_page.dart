@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:url_launcher/url_launcher.dart';
 import '../config/app_theme.dart';
 import '../config/app_locale.dart';
 import '../config/app_font.dart';
@@ -10,6 +11,10 @@ import '../services/backup_restore_stub.dart'
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key, this.onWithdraw});
+
+  static final Uri _webHelpUri = Uri.parse(
+    'https://help.idosquare.co.kr/feelog-diary',
+  );
 
   /// 계정 탈퇴 시 호출 (홈에서 설정 진입 시에만 전달되어 설정 하단에 표시)
   final VoidCallback? onWithdraw;
@@ -225,6 +230,38 @@ class SettingsPage extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 12),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () => _openWebHelp(context),
+              child: _buttonRow(
+                context,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Row(
+                  children: [
+                    const Icon(
+                      CupertinoIcons.globe,
+                      size: 20,
+                      color: CupertinoColors.activeBlue,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        s.webHelp,
+                        style: appFontText(context,
+                            fontSize: 17, color: rowTextColor),
+                      ),
+                    ),
+                    const Icon(
+                      CupertinoIcons.chevron_forward,
+                      size: 16,
+                      color: CupertinoColors.systemGrey2,
+                    ),
+                  ],
+                ),
+              ),
+            ),
             if (onWithdraw != null) ...[
               const SizedBox(height: 12),
               CupertinoButton(
@@ -251,6 +288,31 @@ class SettingsPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _openWebHelp(BuildContext context) async {
+    final ok = await launchUrl(
+      _webHelpUri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!ok && context.mounted) {
+      await showCupertinoDialog<void>(
+        context: context,
+        builder: (context) {
+          return CupertinoAlertDialog(
+            title: const Text('안내'),
+            content: const Text('도움말 페이지를 열 수 없습니다.'),
+            actions: [
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('확인'),
+              ),
+            ],
+          );
+        },
+      );
+    }
   }
 }
 

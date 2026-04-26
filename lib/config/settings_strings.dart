@@ -19,6 +19,7 @@ class SettingsStrings {
     required this.deleteAccount,
     required this.languageOptionKo,
     required this.languageOptionEn,
+    required this.webHelp,
   });
 
   final String title;
@@ -37,6 +38,7 @@ class SettingsStrings {
   final String deleteAccount;
   final String languageOptionKo;
   final String languageOptionEn;
+  final String webHelp;
 
   static const SettingsStrings ko = SettingsStrings(
     title: '설정',
@@ -56,6 +58,7 @@ class SettingsStrings {
     deleteAccount: '계정 탈퇴',
     languageOptionKo: '한국어',
     languageOptionEn: 'English',
+    webHelp: '웹페이지 도움말',
   );
 
   static const SettingsStrings en = SettingsStrings(
@@ -76,6 +79,7 @@ class SettingsStrings {
     deleteAccount: 'Delete account',
     languageOptionKo: 'Korean',
     languageOptionEn: 'English',
+    webHelp: 'Web help page',
   );
 
   static SettingsStrings forLocale(AppLocaleCode code) {
