@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../config/app_locale.dart';
+import '../config/app_font.dart';
 import '../config/home_strings.dart';
 import '../main.dart';
 
@@ -55,7 +55,7 @@ class AnalyzingAdDialog extends StatelessWidget {
           children: [
             Text(
               s.analyzingDiary,
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: textColor,

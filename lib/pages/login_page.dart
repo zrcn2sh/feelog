@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../services/auth_service.dart';
 import '../main.dart';
+import '../config/app_font.dart';
 import '../config/app_version.dart';
 import '../config/app_locale.dart';
 import '../config/login_strings.dart';
@@ -145,7 +145,7 @@ class _LoginPageState extends State<LoginPage> {
               // 앱 제목
               Text(
                 'Feelog',
-                style: GoogleFonts.gaegu(
+                style: appFontText(context, 
                   fontSize: 37,
                   fontWeight: FontWeight.w700,
                   color: textColor,
@@ -159,7 +159,7 @@ class _LoginPageState extends State<LoginPage> {
               Text(
                 s.subtitle,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.gaegu(
+                style: appFontText(context, 
                   fontSize: 18,
                   color: secondaryTextColor,
                   fontWeight: FontWeight.w400,
@@ -190,7 +190,7 @@ class _LoginPageState extends State<LoginPage> {
                             const SizedBox(width: 12),
                             Text(
                               s.continueWithGoogle,
-                              style: GoogleFonts.gaegu(
+                              style: appFontText(context, 
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
                                 color: CupertinoColors.white,
@@ -222,7 +222,7 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(width: 12),
                       Text(
                         s.continueWithApple,
-                        style: GoogleFonts.gaegu(
+                        style: appFontText(context, 
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                           color: CupertinoColors.white,
@@ -239,7 +239,7 @@ class _LoginPageState extends State<LoginPage> {
               Text(
                 s.termsNotice,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.gaegu(
+                style: appFontText(context, 
                   fontSize: 14,
                   color: secondaryTextColor,
                   fontWeight: FontWeight.w400,
@@ -253,7 +253,7 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   Text(
                     'v${AppVersion.version}',
-                    style: GoogleFonts.gaegu(
+                    style: appFontText(context, 
                       fontSize: 13,
                       fontWeight: FontWeight.w400,
                       color: secondaryTextColor,
@@ -262,7 +262,7 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 4),
                   Text(
                     'by ${AppVersion.developer}',
-                    style: GoogleFonts.gaegu(
+                    style: appFontText(context, 
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
                       color: tertiaryTextColor,

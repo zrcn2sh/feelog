@@ -1,9 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:google_fonts/google_fonts.dart';
 import '../config/app_theme.dart';
 import '../config/app_locale.dart';
+import '../config/app_font.dart';
 import '../config/settings_strings.dart';
+import '../main.dart';
 import '../services/backup_restore_stub.dart'
     if (dart.library.io) '../services/backup_restore_io.dart' as backup;
 
@@ -16,6 +17,7 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = AppThemeScope.of(context);
+    final appFont = AppFontScope.of(context);
     final appLocale = AppLocaleScope.of(context);
     final s = SettingsStrings.forLocale(appLocale.code);
     final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
@@ -30,7 +32,7 @@ class SettingsPage extends StatelessWidget {
       navigationBar: CupertinoNavigationBar(
         middle: Text(
           s.title,
-          style: GoogleFonts.gaegu(
+          style: appFontText(context, 
             fontSize: 19,
             fontWeight: FontWeight.w600,
             color: titleColor,
@@ -40,7 +42,24 @@ class SettingsPage extends StatelessWidget {
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: () => Navigator.of(context).pop(),
-          child: const Icon(CupertinoIcons.back),
+          child: Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFF8F4FF), Color(0xFFEFE6FF)],
+              ),
+              borderRadius: BorderRadius.circular(11),
+              border: Border.all(color: const Color(0xFFE8DFFA), width: 1),
+            ),
+            child: const Icon(
+              CupertinoIcons.back,
+              size: 18,
+              color: AppColors.primary,
+            ),
+          ),
         ),
       ),
       child: SafeArea(
@@ -56,7 +75,7 @@ class SettingsPage extends StatelessWidget {
                 children: [
                   Text(
                     s.displayMode,
-                    style: GoogleFonts.gaegu(fontSize: 17, color: rowTextColor),
+                    style: appFontText(context, fontSize: 17, color: rowTextColor),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -67,17 +86,17 @@ class SettingsPage extends StatelessWidget {
                       children: {
                         ThemePreference.system: _segmentPadding(
                           Text(s.auto,
-                              style: GoogleFonts.gaegu(
+                              style: appFontText(context, 
                                   fontSize: 13, color: rowTextColor)),
                         ),
                         ThemePreference.light: _segmentPadding(
                           Text(s.light,
-                              style: GoogleFonts.gaegu(
+                              style: appFontText(context, 
                                   fontSize: 13, color: rowTextColor)),
                         ),
                         ThemePreference.dark: _segmentPadding(
                           Text(s.dark,
-                              style: GoogleFonts.gaegu(
+                              style: appFontText(context, 
                                   fontSize: 13, color: rowTextColor)),
                         ),
                       },
@@ -93,12 +112,52 @@ class SettingsPage extends StatelessWidget {
             _buttonRow(
               context,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  Text(
+                    s.font,
+                    style: appFontText(context, fontSize: 17, color: rowTextColor),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: CupertinoSlidingSegmentedControl<AppFontFamily>(
+                      groupValue: appFont.family,
+                      thumbColor: CupertinoColors.tertiarySystemFill
+                          .resolveFrom(context),
+                      children: {
+                        AppFontFamily.gaegu: _segmentPadding(
+                          Text(
+                            s.fontOptionCurrent,
+                            style: appFontText(context,
+                                fontSize: 13, color: rowTextColor),
+                          ),
+                        ),
+                        AppFontFamily.notoSans: _segmentPadding(
+                          Text(
+                            s.fontOptionNotoSans,
+                            style: appFontText(context,
+                                fontSize: 13, color: rowTextColor),
+                          ),
+                        ),
+                      },
+                      onValueChanged: (v) {
+                        if (v != null) appFont.setFamily(v);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buttonRow(
+              context,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     s.dataTransfer,
-                    style: GoogleFonts.gaegu(
+                    style: appFontText(context, 
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: rowTextColor),
@@ -121,7 +180,7 @@ class SettingsPage extends StatelessWidget {
                               const SizedBox(width: 6),
                               Text(
                                 s.exportBackup,
-                                style: GoogleFonts.gaegu(
+                                style: appFontText(context, 
                                     fontSize: 15,
                                     color: CupertinoColors.activeBlue),
                               ),
@@ -144,7 +203,7 @@ class SettingsPage extends StatelessWidget {
                               const SizedBox(width: 6),
                               Text(
                                 s.importBackup,
-                                style: GoogleFonts.gaegu(
+                                style: appFontText(context, 
                                     fontSize: 15,
                                     color: CupertinoColors.activeBlue),
                               ),
@@ -157,7 +216,7 @@ class SettingsPage extends StatelessWidget {
                   const SizedBox(height: 10),
                   Text(
                     s.backupDescription,
-                    style: GoogleFonts.gaegu(
+                    style: appFontText(context, 
                       fontSize: 13,
                       color:
                           CupertinoColors.secondaryLabel.resolveFrom(context),
@@ -178,7 +237,7 @@ class SettingsPage extends StatelessWidget {
                   child: Center(
                     child: Text(
                       s.deleteAccount,
-                      style: GoogleFonts.gaegu(
+                      style: appFontText(context, 
                         fontSize: 17,
                         fontWeight: FontWeight.w500,
                         color: CupertinoColors.destructiveRed,
@@ -205,7 +264,7 @@ Widget _languageRow(
       children: [
         Text(
           s.language,
-          style: GoogleFonts.gaegu(fontSize: 17, color: rowTextColor),
+          style: appFontText(context, fontSize: 17, color: rowTextColor),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -217,14 +276,14 @@ Widget _languageRow(
               AppLocaleCode.ko: _segmentPadding(
                 Text(
                   s.languageOptionKo,
-                  style: GoogleFonts.gaegu(
+                  style: appFontText(context, 
                       fontSize: 13, color: rowTextColor),
                 ),
               ),
               AppLocaleCode.en: _segmentPadding(
                 Text(
                   s.languageOptionEn,
-                  style: GoogleFonts.gaegu(
+                  style: appFontText(context, 
                       fontSize: 13, color: rowTextColor),
                 ),
               ),
@@ -241,11 +300,31 @@ Widget _languageRow(
 
 Widget _buttonRow(BuildContext context,
     {required EdgeInsets padding, required Widget child}) {
+  final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
   return Container(
     width: double.infinity,
     decoration: BoxDecoration(
-      color: CupertinoColors.secondarySystemFill.resolveFrom(context),
-      borderRadius: BorderRadius.circular(12),
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: isDark
+            ? const [Color(0xFF26262E), Color(0xFF1E1E24)]
+            : const [CupertinoColors.white, Color(0xFFF6F2FF)],
+      ),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: isDark ? const Color(0xFF33333C) : const Color(0xFFE8E3F6),
+        width: 1,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: isDark
+              ? CupertinoColors.black.withValues(alpha: 0.22)
+              : const Color(0x1F000000),
+          blurRadius: 12,
+          offset: const Offset(0, 6),
+        ),
+      ],
     ),
     padding: padding,
     child: child,

@@ -5,10 +5,10 @@ import 'dart:typed_data' show Uint8List;
 import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart' as enc;
 import 'package:flutter/cupertino.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
+import '../config/app_font.dart';
 import 'local_diary_service.dart';
 
 const String _encMagic = 'FEELOG_ENC_V1\n';
@@ -183,7 +183,7 @@ Future<String?> _showPasswordDialog(
   final result = await showCupertinoDialog<String?>(
     context: context,
     builder: (ctx) => CupertinoAlertDialog(
-      title: Text(title, style: GoogleFonts.gaegu(fontSize: 18)),
+      title: Text(title, style: appFontText(ctx, fontSize: 18)),
       content: Padding(
         padding: const EdgeInsets.only(top: 12),
         child: Column(
@@ -192,14 +192,14 @@ Future<String?> _showPasswordDialog(
           children: [
             Text(
               message,
-              style: GoogleFonts.gaegu(fontSize: 14, height: 1.4),
+              style: appFontText(ctx, fontSize: 14, height: 1.4),
             ),
             const SizedBox(height: 12),
             CupertinoTextField(
               controller: controller,
               placeholder: hint,
               obscureText: true,
-              style: GoogleFonts.gaegu(fontSize: 16),
+              style: appFontText(ctx, fontSize: 16),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: CupertinoColors.systemGrey6.resolveFrom(ctx),
@@ -230,8 +230,8 @@ void _showDialog(BuildContext context, String title, String content) {
   showCupertinoDialog(
     context: context,
     builder: (ctx) => CupertinoAlertDialog(
-      title: Text(title, style: GoogleFonts.gaegu(fontSize: 18)),
-      content: Text(content, style: GoogleFonts.gaegu(fontSize: 16)),
+      title: Text(title, style: appFontText(ctx, fontSize: 18)),
+      content: Text(content, style: appFontText(ctx, fontSize: 16)),
       actions: [
         CupertinoDialogAction(child: const Text('확인'), onPressed: () => Navigator.pop(ctx)),
       ],

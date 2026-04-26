@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
@@ -16,6 +15,7 @@ import 'config/app_secret.dart';
 import 'config/app_theme.dart';
 import 'config/app_locale.dart';
 import 'config/app_version.dart';
+import 'config/app_font.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +43,10 @@ void main() async {
   final localeCode = await AppLocale.loadLocaleCode();
   final appLocale = AppLocale(initialCode: localeCode);
 
+  // 폰트 설정 로드 (가우구 / Noto Sans)
+  final fontFamily = await AppFont.loadFontFamily();
+  final appFont = AppFont(initialFamily: fontFamily);
+
   // AdMob 초기화 (모바일만)
   if (!kIsWeb) {
     await MobileAds.instance.initialize();
@@ -52,11 +56,14 @@ void main() async {
     print('ℹ️ Hive 초기화는 사용자 로그인 후 HomePage에서 수행됩니다.');
   }
 
-  runApp(AppThemeScope(
-    notifier: appTheme,
-    child: AppLocaleScope(
-      notifier: appLocale,
-      child: MyApp(theme: appTheme),
+  runApp(AppFontScope(
+    notifier: appFont,
+    child: AppThemeScope(
+      notifier: appTheme,
+      child: AppLocaleScope(
+        notifier: appLocale,
+        child: MyApp(theme: appTheme, appFont: appFont),
+      ),
     ),
   ));
 }
@@ -71,9 +78,10 @@ class AppColors {
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key, required this.theme});
+  const MyApp({super.key, required this.theme, required this.appFont});
 
   final AppTheme theme;
+  final AppFont appFont;
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -84,6 +92,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     widget.theme.addListener(_onThemeChanged);
+    widget.appFont.addListener(_onThemeChanged);
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -91,6 +100,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     widget.theme.removeListener(_onThemeChanged);
+    widget.appFont.removeListener(_onThemeChanged);
     super.dispose();
   }
 
@@ -118,7 +128,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           primaryColor: widget.theme.brightness == Brightness.dark
               ? CupertinoColors.white
               : CupertinoColors.label,
-          textStyle: GoogleFonts.gaegu(
+          textStyle: appFontText(
+            context,
             color: widget.theme.brightness == Brightness.dark
                 ? CupertinoColors.white
                 : CupertinoColors.label,

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
@@ -12,6 +11,7 @@ import '../models/diary_entry.dart';
 import '../widgets/onboarding_modal.dart';
 import '../widgets/analyzing_ad_dialog_stub.dart' if (dart.library.io) '../widgets/analyzing_ad_dialog.dart' as analyzing_dialog;
 import '../config/app_locale.dart';
+import '../config/app_font.dart';
 import '../config/home_strings.dart';
 import '../main.dart';
 import 'settings_page.dart';
@@ -397,8 +397,27 @@ class _HomePageState extends State<HomePage> {
         final emailColor = isDark ? CupertinoColors.white : CupertinoColors.secondaryLabel.resolveFrom(context);
         return Container(
         decoration: BoxDecoration(
-          color: CupertinoColors.systemBackground.resolveFrom(context),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? const [Color(0xFF24242B), Color(0xFF19191F)]
+                : const [CupertinoColors.white, Color(0xFFF5F1FF)],
+          ),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border.all(
+            color: isDark ? const Color(0xFF31313A) : const Color(0xFFEAE4F7),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: isDark
+                  ? CupertinoColors.black.withValues(alpha: 0.30)
+                  : const Color(0x26000000),
+              blurRadius: 18,
+              offset: const Offset(0, -6),
+            ),
+          ],
         ),
         child: SafeArea(
           top: false,
@@ -409,7 +428,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Text(
                   s.userInfo,
-                  style: GoogleFonts.gaegu(
+                  style: appFontText(context, 
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
                     color: titleColor,
@@ -421,7 +440,7 @@ class _HomePageState extends State<HomePage> {
                   height: 80,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.12),
                   ),
                   child:
                       _userInfo['photo'] != null && _userInfo['photo']!.isNotEmpty
@@ -449,7 +468,7 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 12),
                 Text(
                   _userInfo['name'] ?? s.user,
-                  style: GoogleFonts.gaegu(
+                  style: appFontText(context, 
                     fontSize: 21,
                     fontWeight: FontWeight.w600,
                     color: nameColor,
@@ -458,7 +477,7 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 8),
                 Text(
                   _userInfo['email'] ?? '',
-                  style: GoogleFonts.gaegu(
+                  style: appFontText(context, 
                     fontSize: 18,
                     color: emailColor,
                     fontWeight: FontWeight.w400,
@@ -472,7 +491,19 @@ class _HomePageState extends State<HomePage> {
                       padding:
                           const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: isDark
+                              ? const [Color(0xFF2A2A33), Color(0xFF21212A)]
+                              : const [Color(0xFFF8F3FF), Color(0xFFEEE5FF)],
+                        ),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF3A3A45)
+                              : const Color(0xFFE6DBFA),
+                          width: 1,
+                        ),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -486,7 +517,7 @@ class _HomePageState extends State<HomePage> {
                           const SizedBox(width: 8),
                           Text(
                             s.diaryCount(_diaryDates.length),
-                            style: GoogleFonts.gaegu(
+                            style: appFontText(context, 
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
                               color: AppColors.primary,
@@ -505,7 +536,19 @@ class _HomePageState extends State<HomePage> {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: isDark
+                                ? const [Color(0xFF2A2A33), Color(0xFF21212A)]
+                                : const [Color(0xFFF8F3FF), Color(0xFFEEE5FF)],
+                          ),
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF3A3A45)
+                                : const Color(0xFFE6DBFA),
+                            width: 1,
+                          ),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: const Icon(
@@ -530,7 +573,7 @@ class _HomePageState extends State<HomePage> {
                         },
                         child: Text(
                           s.exit,
-                          style: GoogleFonts.gaegu(
+                          style: appFontText(context, 
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
                           ),
@@ -548,7 +591,7 @@ class _HomePageState extends State<HomePage> {
                         onPressed: () => Navigator.pop(context),
                         child: Text(
                           s.close,
-                          style: GoogleFonts.gaegu(
+                          style: appFontText(context, 
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
                             color: AppColors.primary,
@@ -575,14 +618,14 @@ class _HomePageState extends State<HomePage> {
       builder: (BuildContext context) => CupertinoAlertDialog(
         title: Text(
           s.withdrawConfirmTitle,
-          style: GoogleFonts.gaegu(
+          style: appFontText(context, 
             fontSize: 20,
             fontWeight: FontWeight.w600,
           ),
         ),
         content: Text(
           s.withdrawConfirmMessage,
-          style: GoogleFonts.gaegu(fontSize: 18),
+          style: appFontText(context, fontSize: 18),
         ),
         actions: [
           CupertinoDialogAction(
@@ -590,7 +633,7 @@ class _HomePageState extends State<HomePage> {
             onPressed: () => Navigator.pop(context, false),
             child: Text(
               s.cancel,
-              style: GoogleFonts.gaegu(fontSize: 18),
+              style: appFontText(context, fontSize: 18),
             ),
           ),
           CupertinoDialogAction(
@@ -598,7 +641,7 @@ class _HomePageState extends State<HomePage> {
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               s.withdraw,
-              style: GoogleFonts.gaegu(fontSize: 18),
+              style: appFontText(context, fontSize: 18),
             ),
           ),
         ],
@@ -640,14 +683,14 @@ class _HomePageState extends State<HomePage> {
         builder: (BuildContext context) => CupertinoAlertDialog(
           title: Text(
             s.alert,
-            style: GoogleFonts.gaegu(
+            style: appFontText(context, 
               fontSize: 20,
               fontWeight: FontWeight.w600,
             ),
           ),
           content: Text(
             s.webHiveNotice,
-            style: GoogleFonts.gaegu(
+            style: appFontText(context, 
               fontSize: 18,
             ),
           ),
@@ -690,7 +733,7 @@ class _HomePageState extends State<HomePage> {
       builder: (BuildContext context) => CupertinoAlertDialog(
         title: Text(
           'Hive 데이터 확인',
-          style: GoogleFonts.gaegu(
+          style: appFontText(context, 
             fontSize: 20,
             fontWeight: FontWeight.w600,
           ),
@@ -702,7 +745,7 @@ class _HomePageState extends State<HomePage> {
             children: [
               Text(
                 s.debugTotalCount(dates.length),
-                style: GoogleFonts.gaegu(
+                style: appFontText(context, 
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                 ),
@@ -711,7 +754,7 @@ class _HomePageState extends State<HomePage> {
               if (dates.isNotEmpty) ...[
                 Text(
                   s.debugDiaryListTitle,
-                  style: GoogleFonts.gaegu(
+                  style: appFontText(context, 
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -725,7 +768,7 @@ class _HomePageState extends State<HomePage> {
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Text(
                         s.diaryEntryLine(date, entry?.content.length ?? 0),
-                        style: GoogleFonts.gaegu(
+                        style: appFontText(context, 
                           fontSize: 15,
                           color: CupertinoColors.secondaryLabel,
                         ),
@@ -736,7 +779,7 @@ class _HomePageState extends State<HomePage> {
                 if (dates.length > 10)
                   Text(
                     s.andMore(dates.length - 10),
-                    style: GoogleFonts.gaegu(
+                    style: appFontText(context, 
                       fontSize: 15,
                       color: CupertinoColors.secondaryLabel,
                     ),
@@ -744,7 +787,7 @@ class _HomePageState extends State<HomePage> {
               ] else
                 Text(
                   s.noDiarySaved,
-                  style: GoogleFonts.gaegu(
+                  style: appFontText(context, 
                     fontSize: 16,
                     color: CupertinoColors.secondaryLabel,
                   ),
@@ -752,7 +795,7 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 12),
               Text(
                 s.checkConsole,
-                style: GoogleFonts.gaegu(
+                style: appFontText(context, 
                   fontSize: 13,
                   color: CupertinoColors.placeholderText,
                 ),
@@ -882,7 +925,7 @@ class _HomePageState extends State<HomePage> {
           navigationBar: CupertinoNavigationBar(
             middle: Text(
               s.monthlyDiaryChartTitle(DateTime.now().year),
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: navTitleColor,
@@ -945,7 +988,7 @@ class _HomePageState extends State<HomePage> {
                                       ? Center(
                                           child: Text(
                                             count.toString(),
-                                            style: GoogleFonts.gaegu(
+                                            style: appFontText(context, 
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                               color: CupertinoColors.white,
@@ -958,7 +1001,7 @@ class _HomePageState extends State<HomePage> {
                                 // 월 레이블 (약자로 오버플로우 방지)
                                 Text(
                                   s.formatMonthShort(month),
-                                  style: GoogleFonts.gaegu(
+                                  style: appFontText(context, 
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
                                     color: monthLabelColor,
@@ -991,7 +1034,7 @@ class _HomePageState extends State<HomePage> {
                             const SizedBox(width: 8),
                             Text(
                               s.diaryCount(totalCount),
-                              style: GoogleFonts.gaegu(
+                              style: appFontText(context, 
                                 fontSize: 19,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.primary,
@@ -1017,7 +1060,7 @@ class _HomePageState extends State<HomePage> {
                             const SizedBox(width: 8),
                             Text(
                               s.noDiaryInYear(DateTime.now().year),
-                              style: GoogleFonts.gaegu(
+                              style: appFontText(context, 
                                 fontSize: 17,
                                 fontWeight: FontWeight.w500,
                                 color: CupertinoColors.secondaryLabel,
@@ -1055,15 +1098,28 @@ class _HomePageState extends State<HomePage> {
               ),
             );
           },
-          child: const Icon(
-            CupertinoIcons.question_circle,
-            color: AppColors.primary,
-            size: 26,
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFF8F4FF), Color(0xFFEFE6FF)],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE8DFFA), width: 1),
+            ),
+            child: const Icon(
+              CupertinoIcons.question_circle,
+              color: AppColors.primary,
+              size: 21,
+            ),
           ),
         ),
         middle: Text(
           'Feelog',
-          style: GoogleFonts.gaegu(
+          style: appFontText(context, 
             fontSize: 21,
             fontWeight: FontWeight.bold,
           ),
@@ -1076,19 +1132,24 @@ class _HomePageState extends State<HomePage> {
             GestureDetector(
               onTap: _showUserInfo,
               child: Container(
-                width: 32,
-                height: 32,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFFF8F4FF), Color(0xFFEFE6FF)],
+                  ),
+                  border: Border.all(color: const Color(0xFFE8DFFA), width: 1),
                 ),
                 child:
                     _userInfo['photo'] != null && _userInfo['photo']!.isNotEmpty
                         ? ClipOval(
                             child: Image.network(
                               _userInfo['photo']!,
-                              width: 32,
-                              height: 32,
+                              width: 36,
+                              height: 36,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
                                 return const Icon(
@@ -1122,10 +1183,23 @@ class _HomePageState extends State<HomePage> {
                   ),
                 );
               },
-              child: const Icon(
-                CupertinoIcons.gear_alt,
-                color: AppColors.primary,
-                size: 26,
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFFF8F4FF), Color(0xFFEFE6FF)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE8DFFA), width: 1),
+                ),
+                child: const Icon(
+                  CupertinoIcons.gear_alt,
+                  color: AppColors.primary,
+                  size: 21,
+                ),
               ),
             ),
           ],
@@ -1158,8 +1232,35 @@ class _HomePageState extends State<HomePage> {
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          color: CupertinoColors.systemGrey6.resolveFrom(context),
-                          borderRadius: BorderRadius.circular(12),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: CupertinoTheme.brightnessOf(context) == Brightness.dark
+                                ? const [
+                                    Color(0xFF24242B),
+                                    Color(0xFF1B1B20),
+                                  ]
+                                : const [
+                                    Color(0xFFF9F6FF),
+                                    Color(0xFFEFE9FF),
+                                  ],
+                          ),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: CupertinoTheme.brightnessOf(context) == Brightness.dark
+                                ? const Color(0xFF31313A)
+                                : const Color(0xFFE8E4F5),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: CupertinoTheme.brightnessOf(context) == Brightness.dark
+                                  ? CupertinoColors.black.withValues(alpha: 0.28)
+                                  : AppColors.primary.withValues(alpha: 0.14),
+                              blurRadius: 16,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
                         ),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
@@ -1190,16 +1291,26 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              const Icon(
-                                CupertinoIcons.calendar,
-                                color: AppColors.primary,
-                                size: 20,
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: CupertinoTheme.brightnessOf(context) == Brightness.dark
+                                      ? const Color(0xFF2A2A31)
+                                      : CupertinoColors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  CupertinoIcons.calendar,
+                                  color: AppColors.primary,
+                                  size: 18,
+                                ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
                                   _formatDate(_selectedDate, s),
-                                  style: GoogleFonts.gaegu(
+                                  style: appFontText(context, 
                                     fontSize: 19,
                                     fontWeight: FontWeight.w600,
                                     color: CupertinoTheme.brightnessOf(context) == Brightness.dark
@@ -1246,17 +1357,40 @@ class _HomePageState extends State<HomePage> {
                     // 달력 뷰 (확장/축소)
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
-                      height: _isCalendarExpanded ? 250 : 0,
+                      height: _isCalendarExpanded ? _calendarExpandedHeight() : 0,
                       child: _isCalendarExpanded
                           ? Container(
                               margin: const EdgeInsets.only(top: 16),
                               decoration: BoxDecoration(
-                                color: CupertinoColors.systemBackground.resolveFrom(context),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: CupertinoColors.separator.resolveFrom(context),
-                                  width: 0.5,
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: CupertinoTheme.brightnessOf(context) == Brightness.dark
+                                      ? const [
+                                          Color(0xFF23232A),
+                                          Color(0xFF18181D),
+                                        ]
+                                      : const [
+                                          CupertinoColors.white,
+                                          Color(0xFFF6F2FF),
+                                        ],
                                 ),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: CupertinoTheme.brightnessOf(context) == Brightness.dark
+                                      ? const Color(0xFF31313A)
+                                      : const Color(0xFFE8E4F5),
+                                  width: 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: CupertinoTheme.brightnessOf(context) == Brightness.dark
+                                        ? CupertinoColors.black.withValues(alpha: 0.30)
+                                        : const Color(0x26000000),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
                               ),
                               child: _buildCalendar(s),
                             )
@@ -1265,87 +1399,214 @@ class _HomePageState extends State<HomePage> {
 
                     const SizedBox(height: 24),
 
-                    // 일기 작성 제목
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          s.todayDiary,
-                          style: GoogleFonts.gaegu(
-                            fontSize: 25,
-                            fontWeight: FontWeight.w700,
-                            color: CupertinoTheme.brightnessOf(context) == Brightness.dark
-                                ? CupertinoColors.white
-                                : CupertinoColors.label,
-                          ),
-                        ),
-                        Row(
+                    // 벤토 스타일: 헤더 카드 + 액션 타일
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final bool isDark =
+                            CupertinoTheme.brightnessOf(context) == Brightness.dark;
+                        final Color cardColor = isDark
+                            ? const Color(0xFF1D1D21)
+                            : CupertinoColors.white;
+                        final Color borderColor = isDark
+                            ? const Color(0xFF303038)
+                            : const Color(0xFFE8E6F4);
+
+                        Widget bentoTile({
+                          required String label,
+                          required IconData icon,
+                          required Color accentColor,
+                          required VoidCallback onTap,
+                        }) {
+                          return Expanded(
+                            child: CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              onPressed: onTap,
+                              child: Container(
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: isDark
+                                        ? [
+                                            accentColor.withValues(alpha: 0.26),
+                                            const Color(0xFF1F1F25),
+                                          ]
+                                        : [
+                                            accentColor.withValues(alpha: 0.16),
+                                            accentColor.withValues(alpha: 0.08),
+                                          ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: borderColor,
+                                    width: 1,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: isDark
+                                          ? CupertinoColors.black.withValues(alpha: 0.26)
+                                          : const Color(0x26000000),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      width: 22,
+                                      height: 22,
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? const Color(0xFF33333D)
+                                            : CupertinoColors.white,
+                                        borderRadius: BorderRadius.circular(7),
+                                      ),
+                                      child: Icon(
+                                        icon,
+                                        size: 13,
+                                        color: accentColor,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      label,
+                                      style: appFontText(context, 
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark ? accentColor : CupertinoColors.label,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+
+                        return Column(
                           children: [
-                            CupertinoButton(
-                              padding: EdgeInsets.zero,
-                              onPressed: () => _show6MonthMood(),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  borderRadius: BorderRadius.circular(20),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: isDark
+                                      ? const [
+                                          Color(0xFF23232B),
+                                          Color(0xFF18181D),
+                                        ]
+                                      : const [
+                                          Color(0xFFF8F5FF),
+                                          Color(0xFFEDE7FF),
+                                        ],
                                 ),
-                                child: Text(
-                                  '6M',
-                                  style: GoogleFonts.gaegu(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                    color: CupertinoColors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: borderColor, width: 1),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: isDark
+                                        ? CupertinoColors.black.withValues(alpha: 0.30)
+                                        : AppColors.primary.withValues(alpha: 0.16),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 9),
                                   ),
-                                ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 42,
+                                    height: 42,
+                                    decoration: BoxDecoration(
+                                      color: cardColor,
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: isDark
+                                              ? CupertinoColors.black
+                                                  .withValues(alpha: 0.20)
+                                              : const Color(0x22000000),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      CupertinoIcons.book_fill,
+                                      color: AppColors.primary,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          s.todayDiary,
+                                          style: appFontText(context, 
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.w700,
+                                            color: isDark
+                                                ? CupertinoColors.white
+                                                : CupertinoColors.label,
+                                          ),
+                                        ),
+                                        Text(
+                                          _hasExistingDiary
+                                              ? (_isEditingMode
+                                                  ? '수정 중'
+                                                  : '작성된 기록이 있어요')
+                                              : '오늘 감정을 기록해보세요',
+                                          style: appFontText(context, 
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w500,
+                                            color: CupertinoColors.secondaryLabel
+                                                .resolveFrom(context),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            CupertinoButton(
-                              padding: EdgeInsets.zero,
-                              onPressed: () => _show1YearMood(),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  borderRadius: BorderRadius.circular(20),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                bentoTile(
+                                  label: '6M',
+                                  icon: CupertinoIcons.chart_bar_alt_fill,
+                                  accentColor: const Color(0xFF6C63FF),
+                                  onTap: _show6MonthMood,
                                 ),
-                                child: Text(
-                                  '1Y',
-                                  style: GoogleFonts.gaegu(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                    color: CupertinoColors.white,
-                                  ),
+                                const SizedBox(width: 10),
+                                bentoTile(
+                                  label: '1Y',
+                                  icon: CupertinoIcons.chart_pie_fill,
+                                  accentColor: const Color(0xFF3A9E8E),
+                                  onTap: _show1YearMood,
                                 ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            CupertinoButton(
-                              padding: EdgeInsets.zero,
-                              onPressed: () => _showSameDayDiary(),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  borderRadius: BorderRadius.circular(20),
+                                const SizedBox(width: 10),
+                                bentoTile(
+                                  label: 'SD',
+                                  icon: CupertinoIcons.clock_fill,
+                                  accentColor: const Color(0xFFD97706),
+                                  onTap: _showSameDayDiary,
                                 ),
-                                child: Text(
-                                  'SD',
-                                  style: GoogleFonts.gaegu(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                    color: CupertinoColors.white,
-                                  ),
-                                ),
-                              ),
+                              ],
                             ),
                           ],
-                        ),
-                      ],
+                        );
+                      },
                     ),
 
                     const SizedBox(height: 16),
@@ -1360,15 +1621,38 @@ class _HomePageState extends State<HomePage> {
                       },
                       child: Container(
                         constraints: const BoxConstraints(
-                          minHeight: 100, // 최소 높이
+                          minHeight: 150, // 최소 높이 (기존 대비 1.5배)
                         ),
                         decoration: BoxDecoration(
-                          color: _diaryInputBackgroundColor(context),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: CupertinoColors.separator.resolveFrom(context),
-                            width: 0.5,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: CupertinoTheme.brightnessOf(context) == Brightness.dark
+                                ? const [
+                                    Color(0xFF23232A),
+                                    Color(0xFF1B1B20),
+                                  ]
+                                : const [
+                                    CupertinoColors.white,
+                                    Color(0xFFF7F4FF),
+                                  ],
                           ),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: CupertinoTheme.brightnessOf(context) == Brightness.dark
+                                ? const Color(0xFF31313A)
+                                : const Color(0xFFE8E6F4),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: CupertinoTheme.brightnessOf(context) == Brightness.dark
+                                  ? CupertinoColors.black.withValues(alpha: 0.30)
+                                  : const Color(0x29000000),
+                              blurRadius: 18,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
                         ),
                         child: CupertinoScrollbar(
                           child: SingleChildScrollView(
@@ -1383,12 +1667,12 @@ class _HomePageState extends State<HomePage> {
                               enabled: !_hasExistingDiary ||
                                   _isEditingMode, // 일기가 없거나 수정 모드면 활성화
                               placeholder: s.diaryPlaceholder,
-                              placeholderStyle: GoogleFonts.gaegu(
+                              placeholderStyle: appFontText(context, 
                                 fontSize: 19,
                                 color: CupertinoColors.tertiaryLabel,
                               ),
                               cursorColor: CupertinoColors.activeBlue,
-                              style: GoogleFonts.gaegu(
+                              style: appFontText(context, 
                                 fontSize: 19,
                                 fontWeight: FontWeight.w400,
                                 color: _diaryInputTextColor(context),
@@ -1417,7 +1701,7 @@ class _HomePageState extends State<HomePage> {
 
             // 하단 고정 버튼 영역
             Container(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
               decoration: BoxDecoration(
                 color: _diaryInputBackgroundColor(context),
                 border: Border(
@@ -1433,7 +1717,7 @@ class _HomePageState extends State<HomePage> {
                     ? // 일기가 없으면 저장하기
                     SizedBox(
                         width: double.infinity,
-                        height: 50,
+                        height: 56,
                         child: CupertinoButton.filled(
                           onPressed: _isAnalyzing ? null : _saveDiary,
                           borderRadius: BorderRadius.circular(25),
@@ -1442,9 +1726,10 @@ class _HomePageState extends State<HomePage> {
                                   color: CupertinoColors.white)
                               : Text(
                                   s.save,
-                                  style: GoogleFonts.gaegu(
+                                  style: appFontText(context, 
                                     fontSize: 20,
                                     fontWeight: FontWeight.w600,
+                                    height: 1.2,
                                     color: CupertinoColors.white,
                                   ),
                                 ),
@@ -1467,9 +1752,10 @@ class _HomePageState extends State<HomePage> {
                                       color: CupertinoColors.white)
                                   : Text(
                                       _isEditingMode ? s.save : s.edit,
-                                      style: GoogleFonts.gaegu(
+                                      style: appFontText(context, 
                                         fontSize: 20,
                                         fontWeight: FontWeight.w600,
+                                        height: 1.2,
                                         color: CupertinoColors.white,
                                       ),
                                     ),
@@ -1481,11 +1767,11 @@ class _HomePageState extends State<HomePage> {
                             onPressed: _isAnalyzing ? null : _deleteDiary,
                             padding: EdgeInsets.zero,
                             child: Container(
-                              width: 50,
-                              height: 50,
+                              width: 56,
+                              height: 56,
                               decoration: BoxDecoration(
                                 color: CupertinoColors.destructiveRed,
-                                borderRadius: BorderRadius.circular(25),
+                                borderRadius: BorderRadius.circular(28),
                               ),
                               child: const Icon(
                                 CupertinoIcons.trash,
@@ -1590,14 +1876,14 @@ class _HomePageState extends State<HomePage> {
         builder: (BuildContext context) => CupertinoAlertDialog(
           title: Text(
             s.alert,
-            style: GoogleFonts.gaegu(
+            style: appFontText(context, 
               fontSize: 20,
               fontWeight: FontWeight.w600,
             ),
           ),
           content: Text(
             s.enterDiaryPrompt,
-            style: GoogleFonts.gaegu(
+            style: appFontText(context, 
               fontSize: 18,
             ),
           ),
@@ -1663,14 +1949,14 @@ class _HomePageState extends State<HomePage> {
           builder: (BuildContext context) => CupertinoAlertDialog(
             title: Text(
               s.saveSuccess,
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
               s.diarySaved,
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 18,
               ),
             ),
@@ -1678,7 +1964,7 @@ class _HomePageState extends State<HomePage> {
               CupertinoDialogAction(
                 child: Text(
                   s.ok,
-                  style: GoogleFonts.gaegu(
+                  style: appFontText(context, 
                     fontSize: 18,
                   ),
                 ),
@@ -1701,14 +1987,14 @@ class _HomePageState extends State<HomePage> {
           builder: (BuildContext context) => CupertinoAlertDialog(
             title: Text(
               s.saveFailed,
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
               '${s.saveErrorMessage}\n$e',
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 18,
               ),
             ),
@@ -1716,7 +2002,7 @@ class _HomePageState extends State<HomePage> {
               CupertinoDialogAction(
                 child: Text(
                   s.ok,
-                  style: GoogleFonts.gaegu(
+                  style: appFontText(context, 
                     fontSize: 18,
                   ),
                 ),
@@ -1825,14 +2111,14 @@ class _HomePageState extends State<HomePage> {
           builder: (BuildContext context) => CupertinoAlertDialog(
             title: Text(
               s.editSuccess,
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
               s.diaryUpdated,
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 18,
               ),
             ),
@@ -1840,7 +2126,7 @@ class _HomePageState extends State<HomePage> {
               CupertinoDialogAction(
                 child: Text(
                   s.ok,
-                  style: GoogleFonts.gaegu(
+                  style: appFontText(context, 
                     fontSize: 18,
                   ),
                 ),
@@ -1865,14 +2151,14 @@ class _HomePageState extends State<HomePage> {
           builder: (BuildContext context) => CupertinoAlertDialog(
             title: Text(
               s.editFailed,
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
               '${s.editErrorMessage}\n$e',
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 18,
               ),
             ),
@@ -1880,7 +2166,7 @@ class _HomePageState extends State<HomePage> {
               CupertinoDialogAction(
                 child: Text(
                   s.ok,
-                  style: GoogleFonts.gaegu(
+                  style: appFontText(context, 
                     fontSize: 18,
                   ),
                 ),
@@ -1960,14 +2246,14 @@ class _HomePageState extends State<HomePage> {
           builder: (BuildContext context) => CupertinoAlertDialog(
             title: Text(
               s.editSuccess,
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
               s.diaryUpdated,
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 18,
               ),
             ),
@@ -1975,7 +2261,7 @@ class _HomePageState extends State<HomePage> {
               CupertinoDialogAction(
                 child: Text(
                   s.ok,
-                  style: GoogleFonts.gaegu(
+                  style: appFontText(context, 
                     fontSize: 18,
                   ),
                 ),
@@ -1996,14 +2282,14 @@ class _HomePageState extends State<HomePage> {
           builder: (BuildContext context) => CupertinoAlertDialog(
             title: Text(
               s.editFailed,
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
               '${s.editErrorMessage}\n$e',
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 18,
               ),
             ),
@@ -2011,7 +2297,7 @@ class _HomePageState extends State<HomePage> {
               CupertinoDialogAction(
                 child: Text(
                   s.ok,
-                  style: GoogleFonts.gaegu(
+                  style: appFontText(context, 
                     fontSize: 18,
                   ),
                 ),
@@ -2035,14 +2321,14 @@ class _HomePageState extends State<HomePage> {
       builder: (BuildContext context) => CupertinoAlertDialog(
         title: Text(
           s.deleteDiaryTitle,
-          style: GoogleFonts.gaegu(
+          style: appFontText(context, 
             fontSize: 20,
             fontWeight: FontWeight.w600,
           ),
         ),
         content: Text(
           s.deleteDiaryConfirm,
-          style: GoogleFonts.gaegu(
+          style: appFontText(context, 
             fontSize: 18,
           ),
         ),
@@ -2051,7 +2337,7 @@ class _HomePageState extends State<HomePage> {
             isDestructiveAction: true,
             child: Text(
               s.cancel,
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 18,
                 color: CupertinoColors.destructiveRed,
               ),
@@ -2061,7 +2347,7 @@ class _HomePageState extends State<HomePage> {
           CupertinoDialogAction(
             child: Text(
               s.delete,
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 18,
                 color: AppColors.primary,
               ),
@@ -2102,14 +2388,14 @@ class _HomePageState extends State<HomePage> {
           builder: (BuildContext context) => CupertinoAlertDialog(
             title: Text(
               s.deleteSuccess,
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
               s.diaryDeleted,
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 18,
               ),
             ),
@@ -2117,7 +2403,7 @@ class _HomePageState extends State<HomePage> {
               CupertinoDialogAction(
                 child: Text(
                   s.ok,
-                  style: GoogleFonts.gaegu(
+                  style: appFontText(context, 
                     fontSize: 18,
                   ),
                 ),
@@ -2145,14 +2431,14 @@ class _HomePageState extends State<HomePage> {
           builder: (BuildContext context) => CupertinoAlertDialog(
             title: Text(
               s.deleteFailed,
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
             content: Text(
               '${s.deleteErrorMessage}\n$e',
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 18,
               ),
             ),
@@ -2160,7 +2446,7 @@ class _HomePageState extends State<HomePage> {
               CupertinoDialogAction(
                 child: Text(
                   s.ok,
-                  style: GoogleFonts.gaegu(
+                  style: appFontText(context, 
                     fontSize: 18,
                   ),
                 ),
@@ -2171,6 +2457,16 @@ class _HomePageState extends State<HomePage> {
         );
       }
     }
+  }
+
+  double _calendarExpandedHeight() {
+    final firstDay = DateTime(_displayMonth.year, _displayMonth.month, 1);
+    final totalDays = DateTime(_displayMonth.year, _displayMonth.month + 1, 0).day;
+    final leadingEmpty = firstDay.weekday == 7 ? 0 : firstDay.weekday;
+    final weekRows = ((leadingEmpty + totalDays) / 7).ceil();
+
+    // 상단 네비/요일/패딩 + 주차별 높이를 합산해 5주/6주 달 모두 안전하게 표시
+    return 100 + (weekRows * 34) + 8;
   }
 
   Widget _buildCalendar(HomeStrings s) {
@@ -2269,7 +2565,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                       child: Text(
                         s.today,
-                        style: GoogleFonts.gaegu(
+                        style: appFontText(context, 
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: CupertinoColors.white,
@@ -2285,7 +2581,7 @@ class _HomePageState extends State<HomePage> {
                 },
                 child: Text(
                   s.formatYearMonth(_displayMonth.year, _displayMonth.month),
-                  style: GoogleFonts.gaegu(
+                  style: appFontText(context, 
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                     color: calendarLabelColor,
@@ -2318,7 +2614,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text(
                   day,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.gaegu(
+                  style: appFontText(context, 
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: calendarSecondaryColor,
@@ -2395,7 +2691,7 @@ class _HomePageState extends State<HomePage> {
                               alignment: Alignment.center,
                               child: Text(
                                 '${date.day}',
-                                style: GoogleFonts.gaegu(
+                                style: appFontText(context, 
                                   fontSize: 14,
                                   fontWeight: isSelected
                                       ? FontWeight.w600
@@ -2647,7 +2943,7 @@ class _HomePageState extends State<HomePage> {
                     Expanded(
                       child: Text(
                         emotion,
-                        style: GoogleFonts.gaegu(
+                        style: appFontText(context, 
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           color: chartTextColor,
@@ -2696,7 +2992,7 @@ class _HomePageState extends State<HomePage> {
                     child: Center(
                       child: Text(
                         '${(value * 100).toStringAsFixed(0)}%',
-                        style: GoogleFonts.gaegu(
+                        style: appFontText(context, 
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: isDark
@@ -2714,7 +3010,7 @@ class _HomePageState extends State<HomePage> {
           // AI 조언
           Text(
             analysis.advice,
-            style: GoogleFonts.gaegu(
+            style: appFontText(context, 
               fontSize: 17,
               color: chartTextColor,
               height: 1.4,
@@ -2744,11 +3040,11 @@ class _HomePageState extends State<HomePage> {
           builder: (BuildContext ctx) => CupertinoAlertDialog(
             title: Text(
               s.errorTitle,
-              style: GoogleFonts.gaegu(fontSize: 18),
+              style: appFontText(context, fontSize: 18),
             ),
             content: Text(
               s.loadDataFailed,
-              style: GoogleFonts.gaegu(fontSize: 16),
+              style: appFontText(context, fontSize: 16),
             ),
             actions: [
               CupertinoDialogAction(
@@ -2942,7 +3238,7 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 16),
                   Text(
                     s.analyzingPeriodWait,
-                    style: GoogleFonts.gaegu(
+                    style: appFontText(context, 
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
                     ),
@@ -2950,7 +3246,7 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 8),
                   Text(
                     s.pleaseWait,
-                    style: GoogleFonts.gaegu(
+                    style: appFontText(context, 
                       fontSize: 15,
                       color: CupertinoColors.secondaryLabel,
                     ),
@@ -3024,7 +3320,7 @@ class _HomePageState extends State<HomePage> {
             navigationBar: CupertinoNavigationBar(
               middle: Text(
                 sModal.period6MonthTitle,
-                style: GoogleFonts.gaegu(
+                style: appFontText(context, 
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: gridLabelColor,
@@ -3056,7 +3352,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                         child: Text(
                           _cleanAiAdvice(aiAdvice),
-                          style: GoogleFonts.gaegu(
+                          style: appFontText(context, 
                             fontSize: 16,
                             color: adviceTextColor,
                             height: 1.4,
@@ -3078,11 +3374,11 @@ class _HomePageState extends State<HomePage> {
         builder: (BuildContext ctx) => CupertinoAlertDialog(
           title: Text(
             s.errorTitle,
-            style: GoogleFonts.gaegu(fontSize: 18),
+            style: appFontText(context, fontSize: 18),
           ),
           content: Text(
             s.loadDataFailed,
-            style: GoogleFonts.gaegu(fontSize: 16),
+            style: appFontText(context, fontSize: 16),
           ),
           actions: [
             CupertinoDialogAction(
@@ -3172,7 +3468,7 @@ class _HomePageState extends State<HomePage> {
                       child: isFirstRow
                           ? Text(
                               "'$yearShort.$monthStr",
-                              style: GoogleFonts.gaegu(
+                              style: appFontText(context, 
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                                 color: gridLabelColor,
@@ -3257,11 +3553,11 @@ class _HomePageState extends State<HomePage> {
           builder: (BuildContext ctx) => CupertinoAlertDialog(
             title: Text(
               s.errorTitle,
-              style: GoogleFonts.gaegu(fontSize: 18),
+              style: appFontText(context, fontSize: 18),
             ),
             content: Text(
               s.loadDataFailed,
-              style: GoogleFonts.gaegu(fontSize: 16),
+              style: appFontText(context, fontSize: 16),
             ),
             actions: [
               CupertinoDialogAction(
@@ -3455,7 +3751,7 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 16),
                   Text(
                     s.analyzingPeriodWait,
-                    style: GoogleFonts.gaegu(
+                    style: appFontText(context, 
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
                     ),
@@ -3463,7 +3759,7 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 8),
                   Text(
                     s.pleaseWait,
-                    style: GoogleFonts.gaegu(
+                    style: appFontText(context, 
                       fontSize: 15,
                       color: CupertinoColors.secondaryLabel,
                     ),
@@ -3537,7 +3833,7 @@ class _HomePageState extends State<HomePage> {
             navigationBar: CupertinoNavigationBar(
               middle: Text(
                 sModal.period1YearTitle,
-                style: GoogleFonts.gaegu(
+                style: appFontText(context, 
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: gridLabelColor,
@@ -3569,7 +3865,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                         child: Text(
                           _cleanAiAdvice(aiAdvice),
-                          style: GoogleFonts.gaegu(
+                          style: appFontText(context, 
                             fontSize: 16,
                             color: adviceTextColor,
                             height: 1.4,
@@ -3591,11 +3887,11 @@ class _HomePageState extends State<HomePage> {
         builder: (BuildContext ctx) => CupertinoAlertDialog(
           title: Text(
             s.errorTitle,
-            style: GoogleFonts.gaegu(fontSize: 18),
+            style: appFontText(context, fontSize: 18),
           ),
           content: Text(
             s.loadDataFailed,
-            style: GoogleFonts.gaegu(fontSize: 16),
+            style: appFontText(context, fontSize: 16),
           ),
           actions: [
             CupertinoDialogAction(
@@ -3685,7 +3981,7 @@ class _HomePageState extends State<HomePage> {
                       child: isFirstRow
                           ? Text(
                               "'$yearShort.$monthStr",
-                              style: GoogleFonts.gaegu(
+                              style: appFontText(context, 
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                                 color: gridLabelColor,
@@ -3827,7 +4123,7 @@ class _HomePageState extends State<HomePage> {
             navigationBar: CupertinoNavigationBar(
               middle: Text(
                 sSd.sameDayMemoriesTitle(currentMonth, currentDay),
-                style: GoogleFonts.gaegu(
+                style: appFontText(context, 
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: titleColor,
@@ -3857,7 +4153,7 @@ class _HomePageState extends State<HomePage> {
                           const SizedBox(height: 16),
                           Text(
                             sSd.noEntryOnThisDay,
-                            style: GoogleFonts.gaegu(
+                            style: appFontText(context, 
                               fontSize: 17,
                               color: bodyTextColor,
                             ),
@@ -3904,7 +4200,7 @@ class _HomePageState extends State<HomePage> {
                                   children: [
                                     Text(
                                       sSd.formatYear(year),
-                                      style: GoogleFonts.gaegu(
+                                      style: appFontText(context, 
                                         fontSize: 19,
                                         fontWeight: FontWeight.w600,
                                         color: isDark ? CupertinoColors.white : AppColors.primary,
@@ -3920,7 +4216,7 @@ class _HomePageState extends State<HomePage> {
                                         ),
                                         child: Text(
                                           mainEmotionLabel,
-                                          style: GoogleFonts.gaegu(
+                                          style: appFontText(context, 
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600,
                                             color: CupertinoColors.white,
@@ -3933,7 +4229,7 @@ class _HomePageState extends State<HomePage> {
                                 const SizedBox(height: 12),
                                 Text(
                                   content,
-                                  style: GoogleFonts.gaegu(
+                                  style: appFontText(context, 
                                     fontSize: 16,
                                     color: bodyTextColor,
                                     height: 1.5,
@@ -3959,7 +4255,7 @@ class _HomePageState extends State<HomePage> {
                                           child: Text(
                                             _cleanAiAdvice(
                                                 moodAnalysis['advice'] ?? ''),
-                                            style: GoogleFonts.gaegu(
+                                            style: appFontText(context, 
                                               fontSize: 14,
                                               color: adviceTextColor,
                                             ),
@@ -3987,11 +4283,11 @@ class _HomePageState extends State<HomePage> {
         builder: (BuildContext ctx) => CupertinoAlertDialog(
           title: Text(
             sErr.errorTitle,
-            style: GoogleFonts.gaegu(fontSize: 18),
+            style: appFontText(context, fontSize: 18),
           ),
           content: Text(
             sErr.loadDataFailed,
-            style: GoogleFonts.gaegu(fontSize: 16),
+            style: appFontText(context, fontSize: 16),
           ),
           actions: [
             CupertinoDialogAction(
@@ -4041,7 +4337,7 @@ class _HomePageState extends State<HomePage> {
                         onPressed: () => Navigator.pop(pickerContext),
                         child: Text(
                           s.cancel,
-                          style: GoogleFonts.gaegu(
+                          style: appFontText(context, 
                             fontSize: 17,
                             color: CupertinoColors.destructiveRed,
                           ),
@@ -4049,7 +4345,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                       Text(
                         s.yearMonthSelectTitle,
-                        style: GoogleFonts.gaegu(
+                        style: appFontText(context, 
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                         ),
@@ -4073,7 +4369,7 @@ class _HomePageState extends State<HomePage> {
                         },
                         child: Text(
                           s.ok,
-                          style: GoogleFonts.gaegu(
+                          style: appFontText(context, 
                             fontSize: 17,
                             color: AppColors.primary,
                           ),
@@ -4098,7 +4394,7 @@ class _HomePageState extends State<HomePage> {
                             return Center(
                               child: Text(
                                 s.formatYear(year),
-                                style: GoogleFonts.gaegu(
+                                style: appFontText(context, 
                                   fontSize: isSelected ? 19 : 17,
                                   fontWeight: isSelected
                                       ? FontWeight.w600
@@ -4130,7 +4426,7 @@ class _HomePageState extends State<HomePage> {
                             return Center(
                               child: Text(
                                 s.formatMonth(month),
-                                style: GoogleFonts.gaegu(
+                                style: appFontText(context, 
                                   fontSize: isSelected ? 19 : 17,
                                   fontWeight: isSelected
                                       ? FontWeight.w600

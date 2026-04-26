@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Material, Colors, Color;
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_locale.dart';
+import '../config/app_font.dart';
 import '../config/onboarding_strings.dart';
 import '../main.dart';
 
@@ -32,17 +32,10 @@ class OnboardingModal extends StatelessWidget {
     await prefs.setBool(key, true);
   }
 
-  /// 다크 모드: 어두운 회색 배경, 라이트 모드: 시스템 배경
-  static Color _modalBackgroundColor(BuildContext context) {
-    if (CupertinoTheme.brightnessOf(context) == Brightness.dark) {
-      return const Color(0xFF2C2C2E);
-    }
-    return CupertinoColors.systemBackground.resolveFrom(context);
-  }
-
   /// 홈의 6M/1Y/SD 버튼과 같은 둥근 버튼 + 설명 한 줄
   static Widget _buildChipRow(
       BuildContext context, String label, String description) {
+    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -51,15 +44,25 @@ class OnboardingModal extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.primary,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                    ? const [Color(0xFF2A2A33), Color(0xFF21212A)]
+                    : const [Color(0xFFF8F3FF), Color(0xFFEEE5FF)],
+              ),
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark ? const Color(0xFF3A3A45) : const Color(0xFFE6DBFA),
+                width: 1,
+              ),
             ),
             child: Text(
               label,
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: CupertinoColors.white,
+                color: AppColors.primary,
               ),
             ),
           ),
@@ -67,7 +70,7 @@ class OnboardingModal extends StatelessWidget {
           Expanded(
             child: Text(
               description,
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 15,
                 height: 1.35,
                 color: CupertinoColors.secondaryLabel.resolveFrom(context),
@@ -107,11 +110,23 @@ class OnboardingModal extends StatelessWidget {
               width: double.infinity,
               child: Container(
                 decoration: BoxDecoration(
-                  color: _modalBackgroundColor(context),
-                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: CupertinoTheme.brightnessOf(context) == Brightness.dark
+                        ? const [Color(0xFF24242B), Color(0xFF19191F)]
+                        : const [CupertinoColors.white, Color(0xFFF5F1FF)],
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: CupertinoTheme.brightnessOf(context) == Brightness.dark
+                        ? const Color(0xFF31313A)
+                        : const Color(0xFFEAE4F7),
+                    width: 1,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: CupertinoColors.black.withOpacity(0.15),
+                      color: CupertinoColors.black.withValues(alpha: 0.15),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -133,7 +148,7 @@ class OnboardingModal extends StatelessWidget {
                               AppLocaleCode.ko: _segmentPaddingSmall(
                                 Text(
                                   'KOR',
-                                  style: GoogleFonts.gaegu(
+                                  style: appFontText(context, 
                                     fontSize: 11,
                                     color: labelColor,
                                   ),
@@ -142,7 +157,7 @@ class OnboardingModal extends StatelessWidget {
                               AppLocaleCode.en: _segmentPaddingSmall(
                                 Text(
                                   'ENG',
-                                  style: GoogleFonts.gaegu(
+                                  style: appFontText(context, 
                                     fontSize: 11,
                                     color: labelColor,
                                   ),
@@ -164,7 +179,7 @@ class OnboardingModal extends StatelessWidget {
                       const SizedBox(height: 16),
                       Text(
                         s.welcomeTitle,
-                        style: GoogleFonts.gaegu(
+                        style: appFontText(context, 
                           fontSize: 23,
                           fontWeight: FontWeight.bold,
                           color: labelColor,
@@ -174,7 +189,7 @@ class OnboardingModal extends StatelessWidget {
                       const SizedBox(height: 16),
                       Text(
                         s.welcomeDesc,
-                        style: GoogleFonts.gaegu(
+                        style: appFontText(context, 
                           fontSize: 17,
                           height: 1.4,
                           color: secondaryColor,
@@ -190,16 +205,28 @@ class OnboardingModal extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
-                          color:
-                              CupertinoColors.systemGrey5.resolveFrom(context),
-                          borderRadius: BorderRadius.circular(10),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors:
+                                CupertinoTheme.brightnessOf(context) == Brightness.dark
+                                    ? const [Color(0xFF2A2A31), Color(0xFF222229)]
+                                    : const [Color(0xFFF8F4FF), Color(0xFFF0E9FF)],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: CupertinoTheme.brightnessOf(context) == Brightness.dark
+                                ? const Color(0xFF373741)
+                                : const Color(0xFFE7DDFC),
+                            width: 1,
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               s.dataNoticeTitle,
-                              style: GoogleFonts.gaegu(
+                              style: appFontText(context, 
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                                 color: labelColor,
@@ -208,7 +235,7 @@ class OnboardingModal extends StatelessWidget {
                             const SizedBox(height: 6),
                             Text(
                               s.dataNoticeBody,
-                              style: GoogleFonts.gaegu(
+                              style: appFontText(context, 
                                 fontSize: 14,
                                 height: 1.45,
                                 color: secondaryColor,
@@ -226,7 +253,7 @@ class OnboardingModal extends StatelessWidget {
                           onPressed: () => onComplete(),
                           child: Text(
                             s.startButton,
-                            style: GoogleFonts.gaegu(
+                            style: appFontText(context, 
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
                               color: CupertinoColors.white,

@@ -1,8 +1,8 @@
 import 'dart:io' show Platform;
 import 'package:flutter/cupertino.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../config/ad_config.dart';
+import '../config/app_font.dart';
 import '../config/app_locale.dart';
 import '../config/home_strings.dart';
 import '../main.dart';
@@ -197,7 +197,7 @@ class _AnalyzingAdDialogState extends State<AnalyzingAdDialog> {
           children: [
             Text(
               s.analyzingDiary,
-              style: GoogleFonts.gaegu(
+              style: appFontText(context, 
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: textColor,
@@ -213,7 +213,7 @@ class _AnalyzingAdDialogState extends State<AnalyzingAdDialog> {
                       ? Center(
                           child: Text(
                             s.adLoadFailed,
-                            style: GoogleFonts.gaegu(
+                            style: appFontText(context, 
                               fontSize: 13,
                               color: CupertinoColors.tertiaryLabel.resolveFrom(context),
                             ),

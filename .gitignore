@@ -64,4 +64,10 @@ macos/Podfile.lock
 
 # App secrets
 lib/config/app_secret.dart
+env.release.json
+
+# Android release signing
+android/key.properties
+android/*.jks
+android/*.keystore
 
