@@ -70,6 +70,7 @@ dependencies:
 
   # 앱 버전 정보 (pubspec.yaml version 노출)
   package_info_plus: ^8.0.0
+  flutter_dotenv: ^6.0.1
 
 dev_dependencies:
   flutter_test:
@@ -105,6 +106,7 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
+    - .env
     - assets/images/
 
   # An image asset can refer to one or more resolution-specific "variants", see

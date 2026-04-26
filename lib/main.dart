@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:io' show Platform;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'firebase_options.dart';
@@ -19,6 +20,14 @@ import 'config/app_font.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {
+    if (kDebugMode) {
+      print('ℹ️ .env 파일을 찾지 못해 dart-define fallback을 사용합니다.');
+    }
+  }
 
   if (kDebugMode) {
     print('🔍 플랫폼: ${kIsWeb ? "웹" : (Platform.isAndroid ? "안드로이드" : "iOS")}');

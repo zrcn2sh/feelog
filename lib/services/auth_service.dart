@@ -16,10 +16,17 @@ class AuthService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  static bool get _hasValidGoogleWebClientId {
+    final id = AppSecret.googleWebClientId.trim();
+    if (id.isEmpty) return false;
+    if (id.startsWith('YOUR_')) return false; // example placeholder 차단
+    return id.endsWith('.apps.googleusercontent.com');
+  }
+
   /// Android: serverClientId 필요(Firebase가 idToken 검증용). 웹: clientId 필요.
   static GoogleSignIn _googleSignInForPlatform() {
     if (kIsWeb) {
-      if (AppSecret.googleWebClientId.isEmpty) {
+      if (!_hasValidGoogleWebClientId) {
         throw Exception(
           '웹 로그인에는 GOOGLE_WEB_CLIENT_ID가 필요합니다. '
           '--dart-define=GOOGLE_WEB_CLIENT_ID=... 를 설정하세요.',
@@ -31,7 +38,7 @@ class AuthService {
       );
     }
     if (Platform.isAndroid) {
-      if (AppSecret.googleWebClientId.isNotEmpty) {
+      if (_hasValidGoogleWebClientId) {
         return GoogleSignIn(
           serverClientId: AppSecret.googleWebClientId,
           scopes: ['email', 'profile'],

@@ -87,7 +87,7 @@ android {
     buildTypes {
         release {
             if (!keystorePropertiesFile.exists()) {
-                throw new GradleException("Missing android/key.properties for release signing.")
+                throw new RuntimeException("Missing android/key.properties for release signing.")
             }
             signingConfig = signingConfigs.release
         }
