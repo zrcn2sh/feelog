@@ -171,7 +171,7 @@ class _LoginPageState extends State<LoginPage> {
               // Google 로그인 버튼
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 56,
                 child: CupertinoButton.filled(
                   onPressed: _isLoading ? null : _signInWithGoogle,
                   borderRadius: BorderRadius.circular(25),
@@ -193,6 +193,7 @@ class _LoginPageState extends State<LoginPage> {
                               style: appFontText(context, 
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
+                                height: 1.2,
                                 color: CupertinoColors.white,
                               ),
                             ),
@@ -206,7 +207,7 @@ class _LoginPageState extends State<LoginPage> {
               // Apple 로그인 버튼 (Apple 가이드라인: 검정 배경)
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 56,
                 child: CupertinoButton(
                   onPressed: _isLoading ? null : _signInWithApple,
                   borderRadius: BorderRadius.circular(25),
@@ -225,6 +226,7 @@ class _LoginPageState extends State<LoginPage> {
                         style: appFontText(context, 
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
+                          height: 1.2,
                           color: CupertinoColors.white,
                         ),
                       ),
@@ -252,7 +254,7 @@ class _LoginPageState extends State<LoginPage> {
               Column(
                 children: [
                   Text(
-                    'v${AppVersion.version}',
+                    'v${AppVersion.fullVersion}',
                     style: appFontText(context, 
                       fontSize: 13,
                       fontWeight: FontWeight.w400,

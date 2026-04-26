@@ -32,8 +32,12 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // AI 서비스 초기화 (Gemini API 키 설정)
-  AIService.setApiKey(AppSecret.geminiApiKey);
+  // AI 서비스 초기화 (Gemini API 키가 있을 때만 설정)
+  if (AppSecret.geminiApiKey.isNotEmpty) {
+    AIService.setApiKey(AppSecret.geminiApiKey);
+  } else if (kDebugMode) {
+    print('⚠️ GEMINI_API_KEY가 없어 AI 기능이 비활성화됩니다.');
+  }
 
   // 테마 설정 로드 (시스템 따르기 | 라이트 | 다크)
   final themePreference = await AppTheme.loadThemePreference();

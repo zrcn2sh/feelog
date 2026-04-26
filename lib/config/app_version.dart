@@ -5,9 +5,17 @@ import 'package:package_info_plus/package_info_plus.dart';
 class AppVersion {
   /// 현재 버전 (앱 시작 시 init()에서 pubspec.yaml 기준으로 설정, 실패 시 fallbackVersion)
   static String version = fallbackVersion;
+  static String buildNumber = fallbackBuildNumber;
 
   /// 플러그인 미지원 환경(웹 디버그 등)에서 사용할 폴백 버전
-  static const String fallbackVersion = '1.2.4';
+  static const String fallbackVersion = '1.3.0';
+  static const String fallbackBuildNumber = '2';
+
+  /// 표시용 전체 버전 (예: 1.3.0+2)
+  static String get fullVersion {
+    if (buildNumber.isEmpty) return version;
+    return '$version+$buildNumber';
+  }
 
   /// 개발자명
   static const String developer = 'Nat-dwi @idosquare';
@@ -18,12 +26,16 @@ class AppVersion {
     try {
       final info = await PackageInfo.fromPlatform();
       version = info.version;
+      buildNumber = info.buildNumber;
     } on MissingPluginException catch (_) {
       version = fallbackVersion;
+      buildNumber = fallbackBuildNumber;
     } on PlatformException catch (_) {
       version = fallbackVersion;
+      buildNumber = fallbackBuildNumber;
     } catch (_) {
       version = fallbackVersion;
+      buildNumber = fallbackBuildNumber;
     }
   }
 }
