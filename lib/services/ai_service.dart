@@ -16,7 +16,8 @@ class MoodAnalysisResult {
     final emotions = List<String>.from(json['emotions'] as List);
     final moodWeights = Map<String, double>.from(json['moodWeights'] as Map);
     // 비율이 높은 순으로 정렬 → 가장 높은 감정(색상)이 제일 왼쪽에 표시되도록
-    emotions.sort((a, b) => (moodWeights[b] ?? 0).compareTo(moodWeights[a] ?? 0));
+    emotions
+        .sort((a, b) => (moodWeights[b] ?? 0).compareTo(moodWeights[a] ?? 0));
     return MoodAnalysisResult(
       emotions: emotions,
       advice: json['advice'] as String,
@@ -73,9 +74,9 @@ class AIService {
     // 지원되는 모델 목록 (우선순위 순)
     // Google Generative AI SDK에서 사용 가능한 모델들
     List<String> supportedModels = [
-      'gemini-2.0-flash', // 최신 빠른 모델 (권장)
-      'gemini-pro', // 안정적인 모델 (백업)
-      'gemini-1.5-pro', // 고성능 모델 (백업)
+      'gemini-2.5-flash-lite', // 요청 모델 (우선)
+      'gemini-flash-lite-latest', // latest 별칭 백업
+      'gemini-2.0-flash', // 2.0 라인 안정 백업
     ];
 
     for (String modelName in supportedModels) {
@@ -228,7 +229,8 @@ class AIService {
   }
 
   /// 기간별 감정 변화 분석 프롬프트 작성 (한/영 지원)
-  String _buildPeriodAnalysisPrompt(Map<String, String> emotionMap, String languageCode) {
+  String _buildPeriodAnalysisPrompt(
+      Map<String, String> emotionMap, String languageCode) {
     final isEn = languageCode == 'en';
     // 감정을 사분면별로 분류 (한국어 + 영어 라벨 모두 처리)
     final q1 = <String>[]; // 노란색: 높은 에너지 + 높은 쾌적함
@@ -236,20 +238,66 @@ class AIService {
     final q3 = <String>[]; // 파란색: 낮은 에너지 + 낮은 쾌적함
     final q4 = <String>[]; // 녹색: 낮은 에너지 + 높은 쾌적함
     const q1Keywords = [
-      '행복한', '희망찬', '신나는', '긍정적인', '활발한', '동기부여된', '동기 부여된', '자랑스러운',
-      'Happy', 'Hopeful', 'Excited', 'Content', 'Joyful', 'Proud', 'Grateful', 'Optimistic',
+      '행복한',
+      '희망찬',
+      '신나는',
+      '긍정적인',
+      '활발한',
+      '동기부여된',
+      '동기 부여된',
+      '자랑스러운',
+      'Happy',
+      'Hopeful',
+      'Excited',
+      'Content',
+      'Joyful',
+      'Proud',
+      'Grateful',
+      'Optimistic',
     ];
     const q2Keywords = [
-      '화난', '걱정', '불안한', '스트레스', '초조한', '스트레스 받는',
-      'Angry', 'Anxious', 'Stressed', 'Worried', 'Nervous', 'Frustrated', 'Irritated',
+      '화난',
+      '걱정',
+      '불안한',
+      '스트레스',
+      '초조한',
+      '스트레스 받는',
+      'Angry',
+      'Anxious',
+      'Stressed',
+      'Worried',
+      'Nervous',
+      'Frustrated',
+      'Irritated',
     ];
     const q3Keywords = [
-      '슬픈', '우울한', '실망', '피곤한', '좌절한',
-      'Sad', 'Depressed', 'Tired', 'Down', 'Disappointed', 'Lonely', 'Hopeless',
+      '슬픈',
+      '우울한',
+      '실망',
+      '피곤한',
+      '좌절한',
+      'Sad',
+      'Depressed',
+      'Tired',
+      'Down',
+      'Disappointed',
+      'Lonely',
+      'Hopeless',
     ];
     const q4Keywords = [
-      '평온한', '편안한', '만족', '감사', '차분한', '충만한',
-      'Calm', 'Peaceful', 'Relaxed', 'Serene', 'Satisfied', 'Thankful', 'Comfortable',
+      '평온한',
+      '편안한',
+      '만족',
+      '감사',
+      '차분한',
+      '충만한',
+      'Calm',
+      'Peaceful',
+      'Relaxed',
+      'Serene',
+      'Satisfied',
+      'Thankful',
+      'Comfortable',
     ];
 
     emotionMap.forEach((date, emotion) {
@@ -443,7 +491,21 @@ Rules:
     // 키워드: 한글/영어 공통으로 검사 (일기 내용이 어떤 언어일 수 있음)
     final highEnergyKeywords = isEn
         ? ['happy', 'joy', 'good', 'love', 'excited', 'hope', 'success']
-        : ['행복', '기쁨', '좋', '감사', '즐거', '희망', '성공', '사랑', '만족', '화', '걱정', '불안', '스트레스'];
+        : [
+            '행복',
+            '기쁨',
+            '좋',
+            '감사',
+            '즐거',
+            '희망',
+            '성공',
+            '사랑',
+            '만족',
+            '화',
+            '걱정',
+            '불안',
+            '스트레스'
+          ];
     final pleasantKeywords = isEn
         ? ['happy', 'joy', 'good', 'love', 'grateful', 'hope', 'success']
         : ['행복', '기쁨', '좋', '감사', '즐거', '희망', '성공', '사랑', '만족'];
@@ -484,7 +546,8 @@ Rules:
       }
       return MoodAnalysisResult(
         emotions: emotions,
-        advice: 'Your feelings matter. Take time to rest and be kind to yourself.',
+        advice:
+            'Your feelings matter. Take time to rest and be kind to yourself.',
         moodWeights: moodWeights,
       );
     }
@@ -517,7 +580,8 @@ Rules:
     if (isEn) {
       return MoodAnalysisResult(
         emotions: ['Calm', 'Peaceful', 'Relaxed'],
-        advice: 'How was your day? Small changes in mood matter. Get some rest for tomorrow.',
+        advice:
+            'How was your day? Small changes in mood matter. Get some rest for tomorrow.',
         moodWeights: {'Calm': 0.4, 'Peaceful': 0.3, 'Relaxed': 0.3},
       );
     }
