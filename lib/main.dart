@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -18,67 +20,153 @@ import 'config/app_locale.dart';
 import 'config/app_version.dart';
 import 'config/app_font.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  // 초기화 전부를 await 하면 네이티브 스플래시(흰 화면+아이콘)만 보이는 시간이 길어질 수 있음.
+  // 즉시 runApp 해 Flutter 첫 프레임(로딩)을 그린 뒤 비동기로 Firebase 등을 마친다.
+  runApp(const FeelogBootstrap());
+}
 
-  try {
-    await dotenv.load(fileName: '.env');
-  } catch (_) {
-    if (kDebugMode) {
-      print('ℹ️ .env 파일을 찾지 못해 dart-define fallback을 사용합니다.');
+/// 스플래시에서 멈춘 것처럼 보이지 않도록, 최소 UI를 먼저 띄운 뒤 초기화한다.
+class FeelogBootstrap extends StatefulWidget {
+  const FeelogBootstrap({super.key});
+
+  @override
+  State<FeelogBootstrap> createState() => _FeelogBootstrapState();
+}
+
+class _FeelogBootstrapState extends State<FeelogBootstrap> {
+  AppTheme? _appTheme;
+  AppLocale? _appLocale;
+  AppFont? _appFont;
+  Object? _initError;
+
+  @override
+  void initState() {
+    super.initState();
+    _bootstrap();
+  }
+
+  String _userFacingInitError(Object e) {
+    if (kDebugMode) return e.toString();
+    return '앱을 시작할 수 없습니다. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.';
+  }
+
+  Future<void> _bootstrap() async {
+    try {
+      try {
+        await dotenv.load(fileName: '.env');
+      } catch (_) {
+        if (kDebugMode) {
+          print('ℹ️ .env 파일을 찾지 못해 dart-define fallback을 사용합니다.');
+        }
+      }
+
+      if (kDebugMode) {
+        print(
+            '🔍 플랫폼: ${kIsWeb ? "웹" : (Platform.isAndroid ? "안드로이드" : "iOS")}');
+      }
+
+      await AppVersion.init();
+
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      ).timeout(const Duration(seconds: 45));
+
+      if (AppSecret.geminiApiKey.isNotEmpty) {
+        AIService.setApiKey(AppSecret.geminiApiKey);
+      } else if (kDebugMode) {
+        print('⚠️ GEMINI_API_KEY가 없어 AI 기능이 비활성화됩니다.');
+      }
+
+      final themePreference = await AppTheme.loadThemePreference();
+      final appTheme = AppTheme(initialPreference: themePreference);
+
+      final localeCode = await AppLocale.loadLocaleCode();
+      final appLocale = AppLocale(initialCode: localeCode);
+
+      final fontFamily = await AppFont.loadFontFamily();
+      final appFont = AppFont(initialFamily: fontFamily);
+
+      if (!kIsWeb) {
+        try {
+          await MobileAds.instance
+              .initialize()
+              .timeout(const Duration(seconds: 15));
+        } on TimeoutException {
+          if (kDebugMode) {
+            print('⚠️ MobileAds 초기화 타임아웃(15초). 앱은 계속 실행됩니다.');
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print('⚠️ MobileAds 초기화 실패: $e');
+          }
+        }
+      }
+
+      if (kDebugMode) {
+        print('ℹ️ Hive 초기화는 사용자 로그인 후 HomePage에서 수행됩니다.');
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _appTheme = appTheme;
+        _appLocale = appLocale;
+        _appFont = appFont;
+        _initError = null;
+      });
+    } on TimeoutException catch (e) {
+      if (!mounted) return;
+      setState(() => _initError = e);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _initError = e);
     }
   }
 
-  if (kDebugMode) {
-    print('🔍 플랫폼: ${kIsWeb ? "웹" : (Platform.isAndroid ? "안드로이드" : "iOS")}');
-  }
+  @override
+  Widget build(BuildContext context) {
+    if (_initError != null) {
+      final msg = _userFacingInitError(_initError!);
+      return MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(msg, textAlign: TextAlign.center),
+            ),
+          ),
+        ),
+      );
+    }
 
-  // 앱 버전 로드 (pubspec.yaml의 version 사용)
-  await AppVersion.init();
+    final appTheme = _appTheme;
+    final appLocale = _appLocale;
+    final appFont = _appFont;
+    if (appTheme == null || appLocale == null || appFont == null) {
+      return const MaterialApp(
+        home: Scaffold(
+          backgroundColor: Colors.white,
+          body: Center(
+            child: CircularProgressIndicator(
+              color: AppColors.primary,
+            ),
+          ),
+        ),
+      );
+    }
 
-  // Firebase 초기화
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  // AI 서비스 초기화 (Gemini API 키가 있을 때만 설정)
-  if (AppSecret.geminiApiKey.isNotEmpty) {
-    AIService.setApiKey(AppSecret.geminiApiKey);
-  } else if (kDebugMode) {
-    print('⚠️ GEMINI_API_KEY가 없어 AI 기능이 비활성화됩니다.');
-  }
-
-  // 테마 설정 로드 (시스템 따르기 | 라이트 | 다크)
-  final themePreference = await AppTheme.loadThemePreference();
-  final appTheme = AppTheme(initialPreference: themePreference);
-
-  // 언어 설정 로드 (한국어 / English)
-  final localeCode = await AppLocale.loadLocaleCode();
-  final appLocale = AppLocale(initialCode: localeCode);
-
-  // 폰트 설정 로드 (가우구 / Noto Sans)
-  final fontFamily = await AppFont.loadFontFamily();
-  final appFont = AppFont(initialFamily: fontFamily);
-
-  // AdMob 초기화 (모바일만)
-  if (!kIsWeb) {
-    await MobileAds.instance.initialize();
-  }
-
-  if (kDebugMode) {
-    print('ℹ️ Hive 초기화는 사용자 로그인 후 HomePage에서 수행됩니다.');
-  }
-
-  runApp(AppFontScope(
-    notifier: appFont,
-    child: AppThemeScope(
-      notifier: appTheme,
-      child: AppLocaleScope(
-        notifier: appLocale,
-        child: MyApp(theme: appTheme, appFont: appFont),
+    return AppFontScope(
+      notifier: appFont,
+      child: AppThemeScope(
+        notifier: appTheme,
+        child: AppLocaleScope(
+          notifier: appLocale,
+          child: MyApp(theme: appTheme, appFont: appFont),
+        ),
       ),
-    ),
-  ));
+    );
+  }
 }
 
 // 앱 테마 색상 정의 (아이콘 보라색 기반)
