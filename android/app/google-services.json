@@ -39,10 +39,10 @@
               "client_type": 3
             },
             {
-              "client_id": "539935166814-bb7s8ns4fn09rmr1p9p81m6t68up9uq8.apps.googleusercontent.com",
+              "client_id": "539935166814-12g2f3nj7tir50mfit8l3cbcbuf6lbo3.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.voicetales"
+                "bundle_id": "com.idosquare.feelog"
               }
             }
           ]
@@ -57,6 +57,30 @@
         }
       },
       "oauth_client": [
+        {
+          "client_id": "539935166814-9lvtq9jtbfopibc8og9r0nsj3vrtndi9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.idosquare.feelog",
+            "certificate_hash": "5bb9cf288f828a06de3a7d4283a05a6b79cd567b"
+          }
+        },
+        {
+          "client_id": "539935166814-p97g13gsbqnblilb65a7b7071p65fmvo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.idosquare.feelog",
+            "certificate_hash": "d7ff2175e358f58402066beee8dc4d9ffd6fc891"
+          }
+        },
+        {
+          "client_id": "539935166814-v7gdlnjbcmj1ri7iranhpjbmvcekuv90.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.idosquare.feelog",
+            "certificate_hash": "52779c20f6bbf33da3e441e7338ce10bafbb858a"
+          }
+        },
         {
           "client_id": "539935166814-ciunikq59rei1a1k4r5bsuvpm1g8cppf.apps.googleusercontent.com",
           "client_type": 3
@@ -75,10 +99,62 @@
               "client_type": 3
             },
             {
-              "client_id": "539935166814-bb7s8ns4fn09rmr1p9p81m6t68up9uq8.apps.googleusercontent.com",
+              "client_id": "539935166814-12g2f3nj7tir50mfit8l3cbcbuf6lbo3.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.voicetales"
+                "bundle_id": "com.idosquare.feelog"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:539935166814:android:6968d0515b728eb5e1bfcf",
+        "android_client_info": {
+          "package_name": "com.idosquare.feelogdiary"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "539935166814-b66dsap05l4g0kar4tiljp7pcvp9nsi3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.idosquare.feelogdiary",
+            "certificate_hash": "09e81ff4b9fed40b82c01bd89016b6520d4357af"
+          }
+        },
+        {
+          "client_id": "539935166814-t3234oru15946b0vn849428f34ip5t7v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.idosquare.feelogdiary",
+            "certificate_hash": "d7ff2175e358f58402066beee8dc4d9ffd6fc891"
+          }
+        },
+        {
+          "client_id": "539935166814-ciunikq59rei1a1k4r5bsuvpm1g8cppf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdML5A2Gvi8u-nQUosE13wAuILDwL6oe0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "539935166814-ciunikq59rei1a1k4r5bsuvpm1g8cppf.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "539935166814-12g2f3nj7tir50mfit8l3cbcbuf6lbo3.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.idosquare.feelog"
               }
             }
           ]

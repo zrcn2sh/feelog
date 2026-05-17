@@ -54,12 +54,13 @@ class _FeelogBootstrapState extends State<FeelogBootstrap> {
 
   Future<void> _bootstrap() async {
     try {
-      try {
-        await dotenv.load(fileName: '.env');
-      } catch (_) {
-        if (kDebugMode) {
-          print('ℹ️ .env 파일을 찾지 못해 dart-define fallback을 사용합니다.');
-        }
+      // 기기에서는 rootBundle 에셋만 읽힘. pubspec에 .env가 없으면 파일 없음 →
+      // 예외만 삼키면 clean() 직후 미초기화 상태라 AppSecret에서 NotInitializedError 남.
+      await dotenv.load(fileName: '.env', isOptional: true);
+      if (kDebugMode && dotenv.env.isEmpty) {
+        print(
+            'ℹ️ .env가 에셋에 없거나 비어 있습니다. pubspec assets에 .env를 넣거나 --dart-define을 사용합니다.',
+        );
       }
 
       if (kDebugMode) {
